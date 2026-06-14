@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ORBITAL VIZ</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000308;color:#c8ddf0;font-family:'JetBrains Mono','Fira Code',monospace;overflow:hidden;width:100vw;height:100vh}
+canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
+#ui{position:absolute;inset:0;pointer-events:none}
+.panel{position:absolute;background:rgba(4,12,28,.9);border:1px solid rgba(0,180,255,.18);border-radius:6px;backdrop-filter:blur(14px);pointer-events:all}
+#topbar{top:14px;left:50%;transform:translateX(-50%);padding:9px 22px;display:flex;align-items:center;gap:18px;white-space:nowrap}
+.logo{font-size:15px;font-weight:700;letter-spacing:.2em;color:#00e5ff}
+.sep{width:1px;height:16px;background:rgba(0,180,255,.2)}
+#clock{font-size:11px;color:#5a7a96}
+#clock b{color:#00e5ff;font-weight:400}
+#statpanel{top:14px;left:14px;width:265px;padding:14px}
+.ptitle{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#5a7a96;margin-bottom:10px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.sc{background:rgba(8,22,50,.8);border:1px solid rgba(0,180,255,.1);border-radius:4px;padding:9px 11px}
+.sv{font-size:22px;font-weight:700;color:#eaf7ff;line-height:1}
+.sl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#5a7a96;margin-top:3px}
+.legend{display:flex;flex-direction:column;gap:5px}
+.li{display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;padding:4px 5px;border-radius:4px;border:1px solid transparent;transition:.15s;user-select:none}
+.li:hover{background:rgba(8,22,50,.8);border-color:rgba(0,180,255,.15)}
+.li.off{opacity:.3}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lname{flex:1;color:#c8ddf0}.lcount{font-size:10px;color:#5a7a96}
+#detpanel{top:14px;right:14px;width:265px;padding:14px;display:none}
+#detpanel.vis{display:block}
+#detname{font-size:13px;font-weight:700;color:#eaf7ff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button.close{position:absolute;top:9px;right:9px;background:none;border:none;color:#5a7a96;font-size:15px;cursor:pointer;padding:3px 7px;border-radius:3px;font-family:inherit}
+button.close:hover{color:#eaf7ff;background:rgba(8,22,50,.8)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin:8px 0}
+.kv dt{font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#5a7a96;align-self:center}
+.kv dd{font-size:11px;color:#eaf7ff;text-align:right}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.bp{background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.35)}
+.br{background:rgba(255,149,0,.12);color:#ff9500;border:1px solid rgba(255,149,0,.35)}
+.bd{background:rgba(255,61,61,.12);color:#ff3d3d;border:1px solid rgba(255,61,61,.35)}
+.bu{background:rgba(136,136,136,.12);color:#888;border:1px solid rgba(136,136,136,.3)}
+#cbar{bottom:18px;left:50%;transform:translateX(-50%);padding:9px 16px;display:flex;align-items:center;gap:12px;white-space:nowrap}
+.cg{display:flex;align-items:center;gap:7px}
+.cl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#5a7a96}
+input[type=range]{-webkit-appearance:none;width:90px;height:3px;background:rgba(0,180,255,.2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#00e5ff;cursor:pointer}
+#tdisp{font-size:11px;color:#00e5ff;min-width:42px}
+.cdiv{width:1px;height:18px;background:rgba(0,180,255,.15)}
+.ibtn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:rgba(8,22,50,.8);border:1px solid rgba(0,180,255,.15);border-radius:4px;color:#5a7a96;cursor:pointer;font-size:14px;transition:.15s;font-family:inherit}
+.ibtn:hover{border-color:rgba(0,229,255,.5);color:#00e5ff}
+.ibtn.on{border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,.08)}
+#srchpanel{bottom:18px;left:14px;padding:6px 10px;display:flex;align-items:center;gap:6px}
+#sinput{background:none;border:none;outline:none;font-family:inherit;font-size:11px;color:#eaf7ff;width:170px}
+#sinput::placeholder{color:#5a7a96}
+#slist{position:absolute;bottom:100%;left:0;right:0;margin-bottom:3px;background:rgba(4,12,28,.96);border:1px solid rgba(0,180,255,.18);border-radius:5px;max-height:200px;overflow-y:auto;display:none}
+#slist.vis{display:block}
+.sri{padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(0,180,255,.06);font-size:11px}
+.sri:last-child{border:none}.sri:hover{background:rgba(8,22,50,.9)}
+.sn{flex:1;color:#eaf7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sid{font-size:9px;color:#5a7a96}
+#fps{position:absolute;bottom:18px;right:14px;font-size:9px;color:#5a7a96;letter-spacing:.06em}
+#loader{position:fixed;inset:0;background:#000308;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:99;transition:opacity .6s}
+#loader.out{opacity:0;pointer-events:none}
+.llogo{font-size:26px;font-weight:700;letter-spacing:.22em;color:#00e5ff}
+.ltrack{width:260px;height:2px;background:rgba(0,180,255,.12);border-radius:1px;overflow:hidden}
+.lfill{height:100%;background:#00e5ff;width:0%;transition:width .4s;box-shadow:0 0 10px rgba(0,229,255,.6)}
+.lmsg{font-size:10px;color:#5a7a96;letter-spacing:.1em}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,180,255,.2);border-radius:2px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div class="panel" id="topbar">
+    <span class="logo">ORBITAL VIZ</span>
+    <div class="sep"></div>
+    <div id="clock">SIM <b id="simclock">--:--:--</b></div>
+    <div class="sep"></div>
+    <span style="font-size:9px;color:#00e5ff;letter-spacing:.1em" id="satcount">-- OBJ</span>
+  </div>
+  <div class="panel" id="statpanel">
+    <div class="ptitle">Tracked Objects</div>
+    <div class="sgrid">
+      <div class="sc"><div class="sv" id="stot">--</div><div class="sl">Total</div></div>
+      <div class="sc"><div class="sv" id="sdeb" style="color:#ff3d3d">--</div><div class="sl">Debris</div></div>
+      <div class="sc"><div class="sv" id="spay" style="color:#00e5ff">--</div><div class="sl">Payloads</div></div>
+      <div class="sc"><div class="sv" id="srkt" style="color:#ff9500">--</div><div class="sl">Rocket Bodies</div></div>
+    </div>
+    <div class="ptitle">Filter</div>
+    <div class="legend">
+      <div class="li" onclick="toggleType('payload',this)"><span class="dot" style="background:#00e5ff;box-shadow:0 0 4px #00e5ff"></span><span class="lname">Payloads</span><span class="lcount" id="lp">0</span></div>
+      <div class="li" onclick="toggleType('rocket_body',this)"><span class="dot" style="background:#ff9500;box-shadow:0 0 4px #ff9500"></span><span class="lname">Rocket Bodies</span><span class="lcount" id="lr">0</span></div>
+      <div class="li" onclick="toggleType('debris',this)"><span class="dot" style="background:#ff3d3d;box-shadow:0 0 4px #ff3d3d"></span><span class="lname">Debris</span><span class="lcount" id="ld">0</span></div>
+      <div class="li" onclick="toggleType('unknown',this)"><span class="dot" style="background:#555"></span><span class="lname">Unknown</span><span class="lcount" id="lu">0</span></div>
+    </div>
+  </div>
+  <div class="panel" id="detpanel">
+    <button class="close" onclick="closeDet()">&#x2715;</button>
+    <div class="ptitle">Selected Object</div>
+    <div id="detname">--</div>
+    <dl class="kv">
+      <dt>NORAD</dt><dd id="dn">--</dd>
+      <dt>Type</dt><dd id="dt">--</dd>
+      <dt>Orbit</dt><dd id="do">--</dd>
+      <dt>Altitude</dt><dd id="da">--</dd>
+      <dt>Period</dt><dd id="dp">--</dd>
+      <dt>Inclination</dt><dd id="di">--</dd>
+      <dt>Velocity</dt><dd id="dv">--</dd>
+      <dt>Eccentricity</dt><dd id="de">--</dd>
+    </dl>
+  </div>
+  <div class="panel" id="cbar">
+    <div class="cg"><span class="cl">Speed</span><input type="range" id="tslider" min="0" max="10" value="0" oninput="setSpeed(+this.value)"><span id="tdisp">1x</span></div>
+    <div class="cdiv"></div>
+    <div class="cg">
+      <button class="ibtn" id="brot" onclick="autoRot=!autoRot;this.classList.toggle('on',autoRot)" title="Auto-rotate">&#x27F3;</button>
+      <button class="ibtn" onclick="resetView()" title="Reset">&#x2316;</button>
+    </div>
+  </div>
+  <div class="panel" id="srchpanel">
+    <span style="color:#5a7a96;font-size:13px">&#x2315;</span>
+    <input id="sinput" type="text" placeholder="Search name or NORAD ID..." autocomplete="off"
+      oninput="doSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';hideSrch()}">
+    <div id="slist"></div>
+  </div>
+  <div id="fps">-- FPS</div>
+</div>
+<div id="loader">
+  <div class="llogo">ORBITAL VIZ</div>
+  <div class="ltrack"><div class="lfill" id="lfill"></div></div>
+  <div class="lmsg" id="lmsg">LOADING...</div>
+</div>
+<script>/*!
+ * satellite-js v5.0.0
+ * (c) 2013 Shashwat Kandadai and UCSC
+ * https://github.com/shashwatak/satellite-js
+ * License: MIT
+ */
+
+!function(o,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(o="undefined"!=typeof globalThis?globalThis:o||self).satellite=t()}(this,(function(){"use strict";var o=Math.PI,t=2*o,e=o/180,s=180/o,a=1440,n=398600.8,d=6378.135,r=60/Math.sqrt(650942.9922085947),i=d*r/60,c=1/r,h=.001082616,m=-253881e-11,l=-165597e-11,p=m/h,x=2/3;function g(o,t){for(var e=[31,o%4==0?29:28,31,30,31,30,31,31,30,31,30,31],s=Math.floor(t),a=1,n=0;s>n+e[a-1]&&a<12;)n+=e[a-1],a+=1;var d=a,r=s-n,i=24*(t-s),c=Math.floor(i);i=60*(i-c);var h=Math.floor(i);return{mon:d,day:r,hr:c,minute:h,sec:60*(i-h)}}function M(o,t,e,s,a,n){var d=arguments.length>6&&void 0!==arguments[6]?arguments[6]:0;return 367*o-Math.floor(7*(o+Math.floor((t+9)/12))*.25)+Math.floor(275*t/9)+e+1721013.5+((d/6e4+n/60+a)/60+s)/24}function f(o,t,e,s,a,n,d){if(o instanceof Date){var r=o;return M(r.getUTCFullYear(),r.getUTCMonth()+1,r.getUTCDate(),r.getUTCHours(),r.getUTCMinutes(),r.getUTCSeconds(),r.getUTCMilliseconds())}return M(o,t,e,s,a,n,d)}function u(e,s){var a,n,d,r,i,c,h,m,l,p,x,g,M,f,u,z,v,y,b=e.e3,q=e.ee2,w=e.peo,T=e.pgho,j=e.pho,E=e.pinco,F=e.plo,A=e.se2,C=e.se3,L=e.sgh2,S=e.sgh3,U=e.sgh4,D=e.sh2,I=e.sh3,R=e.si2,_=e.si3,k=e.sl2,O=e.sl3,P=e.sl4,Z=e.t,G=e.xgh2,H=e.xgh3,Y=e.xgh4,$=e.xh2,B=e.xh3,J=e.xi2,K=e.xi3,N=e.xl2,Q=e.xl3,V=e.xl4,W=e.zmol,X=e.zmos,oo=s.init,to=s.opsmode,eo=s.ep,so=s.inclp,ao=s.nodep,no=s.argpp,ro=s.mp;y=X+119459e-10*Z,"y"===oo&&(y=X),v=y+.0335*Math.sin(y);var io=A*(h=.5*(f=Math.sin(v))*f-.25)+C*(m=-.5*f*Math.cos(v)),co=R*h+_*m,ho=k*h+O*m+P*f,mo=L*h+S*m+U*f,lo=D*h+I*m;return y=W+.00015835218*Z,"y"===oo&&(y=W),v=y+.1098*Math.sin(y),l=io+(q*(h=.5*(f=Math.sin(v))*f-.25)+b*(m=-.5*f*Math.cos(v))),g=co+(J*h+K*m),M=ho+(N*h+Q*m+V*f),p=mo+(G*h+H*m+Y*f),x=lo+($*h+B*m),"n"===oo&&(M-=F,p-=T,x-=j,so+=g-=E,eo+=l-=w,r=Math.sin(so),d=Math.cos(so),so>=.2?(no+=p-=d*(x/=r),ao+=x,ro+=M):(a=r*(c=Math.sin(ao)),n=r*(i=Math.cos(ao)),a+=x*i+g*d*c,n+=-x*c+g*d*i,(ao%=t)<0&&"a"===to&&(ao+=t),u=ro+no+d*ao,u+=M+p-g*ao*r,z=ao,(ao=Math.atan2(a,n))<0&&"a"===to&&(ao+=t),Math.abs(z-ao)>o&&(ao<z?ao+=t:ao-=t),no=u-(ro+=M)-d*ao)),{ep:eo,inclp:so,nodep:ao,argpp:no,mp:ro}}function z(o){var s=(o-2451545)/36525,a=-62e-7*s*s*s+.093104*s*s+3164400184.812866*s+67310.54841;return(a=a*e/240%t)<0&&(a+=t),a}function v(){return(arguments.length<=0?void 0:arguments[0])instanceof Date||arguments.length>1?z(f.apply(void 0,arguments)):z.apply(void 0,arguments)}function y(e,s){var a,n,c,m,l,g,M,f,z,v,y,b,q,w,T,j,E,F,A,C,L,S,U,D,I,R;e.t=s,e.error=0;var _=e.mo+e.mdot*e.t,k=e.argpo+e.argpdot*e.t,O=e.nodeo+e.nodedot*e.t;f=k,C=_;var P=e.t*e.t;if(S=O+e.nodecf*P,j=1-e.cc1*e.t,E=e.bstar*e.cc4*e.t,F=e.t2cof*P,1!==e.isimp){g=e.omgcof*e.t;var Z=1+e.eta*Math.cos(_);C=_+(T=g+e.xmcof*(Z*Z*Z-e.delmo)),f=k-T,b=(y=P*e.t)*e.t,j=j-e.d2*P-e.d3*y-e.d4*b,E+=e.bstar*e.cc5*(Math.sin(C)-e.sinmao),F=F+e.t3cof*y+b*(e.t4cof+e.t*e.t5cof)}L=e.no;var G=e.ecco;if(A=e.inclo,"d"===e.method){q=e.t;var H=function(o){var e,s,a,n,d,r,i,c,h=o.irez,m=o.d2201,l=o.d2211,p=o.d3210,x=o.d3222,g=o.d4410,M=o.d4422,f=o.d5220,u=o.d5232,z=o.d5421,v=o.d5433,y=o.dedt,b=o.del1,q=o.del2,w=o.del3,T=o.didt,j=o.dmdt,E=o.dnodt,F=o.domdt,A=o.argpo,C=o.argpdot,L=o.t,S=o.tc,U=o.gsto,D=o.xfact,I=o.xlamo,R=o.no,_=o.atime,k=o.em,O=o.argpm,P=o.inclm,Z=o.xli,G=o.mm,H=o.xni,Y=o.nodem,$=o.nm,B=.13130908,J=2.8843198,K=.37448087,N=5.7686396,Q=.95240898,V=1.8014998,W=1.050833,X=4.4108898,oo=259200,to=0,eo=0,so=(U+.0043752690880113*S)%t;if(k+=y*L,P+=T*L,O+=F*L,Y+=E*L,G+=j*L,0!==h){(0===_||L*_<=0||Math.abs(L)<Math.abs(_))&&(_=0,H=R,Z=I),e=L>0?720:-720;for(var ao=381;381===ao;)2!==h?(i=b*Math.sin(Z-B)+q*Math.sin(2*(Z-J))+w*Math.sin(3*(Z-K)),d=H+D,r=b*Math.cos(Z-B)+2*q*Math.cos(2*(Z-J))+3*w*Math.cos(3*(Z-K)),r*=d):(a=(c=A+C*_)+c,s=Z+Z,i=m*Math.sin(a+Z-N)+l*Math.sin(Z-N)+p*Math.sin(c+Z-Q)+x*Math.sin(-c+Z-Q)+g*Math.sin(a+s-V)+M*Math.sin(s-V)+f*Math.sin(c+Z-W)+u*Math.sin(-c+Z-W)+z*Math.sin(c+s-X)+v*Math.sin(-c+s-X),d=H+D,r=m*Math.cos(a+Z-N)+l*Math.cos(Z-N)+p*Math.cos(c+Z-Q)+x*Math.cos(-c+Z-Q)+f*Math.cos(c+Z-W)+u*Math.cos(-c+Z-W)+2*(g*Math.cos(a+s-V)+M*Math.cos(s-V)+z*Math.cos(c+s-X)+v*Math.cos(-c+s-X)),r*=d),Math.abs(L-_)>=720?ao=381:(eo=L-_,ao=0),381===ao&&(Z+=d*e+i*oo,H+=i*e+r*oo,_+=e);$=H+i*eo+r*eo*eo*.5,n=Z+d*eo+i*eo*eo*.5,1!==h?(G=n-2*Y+2*so,to=$-R):(G=n-Y-O+so,to=$-R),$=R+to}return{atime:_,em:k,argpm:O,inclm:P,xli:Z,mm:G,xni:H,nodem:Y,dndt:to,nm:$}}({irez:e.irez,d2201:e.d2201,d2211:e.d2211,d3210:e.d3210,d3222:e.d3222,d4410:e.d4410,d4422:e.d4422,d5220:e.d5220,d5232:e.d5232,d5421:e.d5421,d5433:e.d5433,dedt:e.dedt,del1:e.del1,del2:e.del2,del3:e.del3,didt:e.didt,dmdt:e.dmdt,dnodt:e.dnodt,domdt:e.domdt,argpo:e.argpo,argpdot:e.argpdot,t:e.t,tc:q,gsto:e.gsto,xfact:e.xfact,xlamo:e.xlamo,no:e.no,atime:e.atime,em:G,argpm:f,inclm:A,xli:e.xli,mm:C,xni:e.xni,nodem:S,nm:L});G=H.em,f=H.argpm,A=H.inclm,C=H.mm,S=H.nodem,L=H.nm}if(L<=0)return e.error=2,[!1,!1];var Y=Math.pow(r/L,x)*j*j;if(L=r/Math.pow(Y,1.5),(G-=E)>=1||G<-.001)return e.error=1,[!1,!1];G<1e-6&&(G=1e-6),D=(C+=e.no*F)+f+S;var $=G;if(U=A,z=f%=t,R=S%=t,I=C=((D%=t)-f-S)%t,m=Math.sin(A),c=Math.cos(A),"d"===e.method){var B=u(e,{inclo:e.inclo,init:"n",ep:$,inclp:U,nodep:R,argpp:z,mp:I,opsmode:e.operationmode});if($=B.ep,R=B.nodep,z=B.argpp,I=B.mp,(U=B.inclp)<0&&(U=-U,R+=o,z-=o),$<0||$>1)return e.error=3,[!1,!1]}"d"===e.method&&(m=Math.sin(U),c=Math.cos(U),e.aycof=-.5*p*m,Math.abs(c+1)>15e-13?e.xlcof=-.25*p*m*(3+5*c)/(1+c):e.xlcof=-.25*p*m*(3+5*c)/15e-13);var J=$*Math.cos(z);T=1/(Y*(1-$*$));var K=$*Math.sin(z)+T*e.aycof,N=(I+z+R+T*e.xlcof*J-R)%t;M=N,w=9999.9;for(var Q=1;Math.abs(w)>=1e-12&&Q<=10;)n=Math.sin(M),w=(N-K*(a=Math.cos(M))+J*n-M)/(w=1-a*J-n*K),Math.abs(w)>=.95&&(w=w>0?.95:-.95),M+=w,Q+=1;var V=J*a+K*n,W=J*n-K*a,X=J*J+K*K,oo=Y*(1-X);if(oo<0)return e.error=4,[!1,!1];var to=Y*(1-V),eo=Math.sqrt(Y)*W/to,so=Math.sqrt(oo)/to,ao=Math.sqrt(1-X),no=Y/to*(n-K-J*(T=W/(1+ao))),ro=Y/to*(a-J+K*T);v=Math.atan2(no,ro);var io=(ro+ro)*no,co=1-2*no*no,ho=.5*h*(T=1/oo),mo=ho*T;"d"===e.method&&(l=c*c,e.con41=3*l-1,e.x1mth2=1-l,e.x7thm1=7*l-1);var lo=to*(1-1.5*mo*ao*e.con41)+.5*ho*e.x1mth2*co;if(lo<1)return e.error=6,{position:!1,velocity:!1};v-=.25*mo*e.x7thm1*io;var po=R+1.5*mo*c*io,xo=U+1.5*mo*c*m*co,go=eo-L*ho*e.x1mth2*io/r,Mo=so+L*ho*(e.x1mth2*co+1.5*e.con41)/r,fo=Math.sin(v),uo=Math.cos(v),zo=Math.sin(po),vo=Math.cos(po),yo=Math.sin(xo),bo=Math.cos(xo),qo=-zo*bo,wo=vo*bo,To=qo*fo+vo*uo,jo=wo*fo+zo*uo,Eo=yo*fo;return{position:{x:lo*To*d,y:lo*jo*d,z:lo*Eo*d},velocity:{x:(go*To+Mo*(qo*uo-vo*fo))*i,y:(go*jo+Mo*(wo*uo-zo*fo))*i,z:(go*Eo+Mo*(yo*uo))*i}}}function b(e,s){var a,n,i,m,g,M,f,z,b,q,w,T,j,E,F,A,C,L,S,U,D,I,R,_,k,O,P,Z,G,H,Y,$,B,J,K,N,Q,V,W,X,oo,to,eo,so,ao,no,ro,io,co,ho,mo,lo,po=s.opsmode,xo=s.satn,go=s.epoch,Mo=s.xbstar,fo=s.xecco,uo=s.xargpo,zo=s.xinclo,vo=s.xmo,yo=s.xno,bo=s.xnodeo;e.isimp=0,e.method="n",e.aycof=0,e.con41=0,e.cc1=0,e.cc4=0,e.cc5=0,e.d2=0,e.d3=0,e.d4=0,e.delmo=0,e.eta=0,e.argpdot=0,e.omgcof=0,e.sinmao=0,e.t=0,e.t2cof=0,e.t3cof=0,e.t4cof=0,e.t5cof=0,e.x1mth2=0,e.x7thm1=0,e.mdot=0,e.nodedot=0,e.xlcof=0,e.xmcof=0,e.nodecf=0,e.irez=0,e.d2201=0,e.d2211=0,e.d3210=0,e.d3222=0,e.d4410=0,e.d4422=0,e.d5220=0,e.d5232=0,e.d5421=0,e.d5433=0,e.dedt=0,e.del1=0,e.del2=0,e.del3=0,e.didt=0,e.dmdt=0,e.dnodt=0,e.domdt=0,e.e3=0,e.ee2=0,e.peo=0,e.pgho=0,e.pho=0,e.pinco=0,e.plo=0,e.se2=0,e.se3=0,e.sgh2=0,e.sgh3=0,e.sgh4=0,e.sh2=0,e.sh3=0,e.si2=0,e.si3=0,e.sl2=0,e.sl3=0,e.sl4=0,e.gsto=0,e.xfact=0,e.xgh2=0,e.xgh3=0,e.xgh4=0,e.xh2=0,e.xh3=0,e.xi2=0,e.xi3=0,e.xl2=0,e.xl3=0,e.xl4=0,e.xlamo=0,e.zmol=0,e.zmos=0,e.atime=0,e.xli=0,e.xni=0,e.bstar=Mo,e.ecco=fo,e.argpo=uo,e.inclo=zo,e.mo=vo,e.no=yo,e.nodeo=bo,e.operationmode=po;e.init="y",e.t=0;var qo=function(o){var e=o.ecco,s=o.epoch,a=o.inclo,n=o.opsmode,d=o.no,i=e*e,c=1-i,m=Math.sqrt(c),l=Math.cos(a),p=l*l,g=Math.pow(r/d,x),M=.75*h*(3*p-1)/(m*c),f=M/(g*g),u=g*(1-f*f-f*(1/3+134*f*f/81));d/=1+(f=M/(u*u));var z,y=Math.pow(r/d,x),b=Math.sin(a),q=y*c,w=1-5*p,T=-w-p-p,j=1/y,E=q*q,F=y*(1-e);if("a"===n){var A=s-7305,C=Math.floor(A+1e-8),L=.017202791694070362;(z=(1.7321343856509375+L*C+(L+t)*(A-C)+A*A*5075514194322695e-30)%t)<0&&(z+=t)}else z=v(s+2433281.5);return{no:d,method:"n",ainv:j,ao:y,con41:T,con42:w,cosio:l,cosio2:p,eccsq:i,omeosq:c,posq:E,rp:F,rteosq:m,sinio:b,gsto:z}}({satn:xo,ecco:e.ecco,epoch:go,inclo:e.inclo,no:e.no,method:e.method,opsmode:e.operationmode}),wo=qo.ao,To=qo.con42,jo=qo.cosio,Eo=qo.cosio2,Fo=qo.eccsq,Ao=qo.omeosq,Co=qo.posq,Lo=qo.rp,So=qo.rteosq,Uo=qo.sinio;if(e.no=qo.no,e.con41=qo.con41,e.gsto=qo.gsto,e.a=Math.pow(e.no*c,-2/3),e.alta=e.a*(1+e.ecco)-1,e.altp=e.a*(1-e.ecco)-1,e.error=0,Ao>=0||e.no>=0){if(e.isimp=0,Lo<1.034492841559484&&(e.isimp=1),_=1.0122292801892716,L=1.880279159015271e-9,(F=(Lo-1)*d)<156){_=F-78,F<98&&(_=20);var Do=(120-_)/d;L=Do*Do*Do*Do,_=_/d+1}A=1/Co,to=1/(wo-_),e.eta=wo*e.ecco*to,T=e.eta*e.eta,w=e.ecco*e.eta,C=Math.abs(1-T),m=(f=(M=L*Math.pow(to,4))/Math.pow(C,3.5))*e.no*(wo*(1+1.5*T+w*(4+T))+.375*h*to/C*e.con41*(8+3*T*(8+T))),e.cc1=e.bstar*m,g=0,e.ecco>1e-4&&(g=-2*M*to*p*e.no*Uo/e.ecco),e.x1mth2=1-Eo,e.cc4=2*e.no*f*wo*Ao*(e.eta*(2+.5*T)+e.ecco*(.5+2*T)-h*to/(wo*C)*(-3*e.con41*(1-2*w+T*(1.5-.5*w))+.75*e.x1mth2*(2*T-w*(1+T))*Math.cos(2*e.argpo))),e.cc5=2*f*wo*Ao*(1+2.75*(T+w)+w*T),z=Eo*Eo,X=.5*(W=1.5*h*A*e.no)*h*A,oo=-.46875*l*A*A*e.no,e.mdot=e.no+.5*W*So*e.con41+.0625*X*So*(13-78*Eo+137*z),e.argpdot=-.5*W*To+.0625*X*(7-114*Eo+395*z)+oo*(3-36*Eo+49*z),so=-W*jo,e.nodedot=so+(.5*X*(4-19*Eo)+2*oo*(3-7*Eo))*jo,eo=e.argpdot+e.nodedot,e.omgcof=e.bstar*g*Math.cos(e.argpo),e.xmcof=0,e.ecco>1e-4&&(e.xmcof=-x*M*e.bstar/w),e.nodecf=3.5*Ao*so*e.cc1,e.t2cof=1.5*e.cc1,Math.abs(jo+1)>15e-13?e.xlcof=-.25*p*Uo*(3+5*jo)/(1+jo):e.xlcof=-.25*p*Uo*(3+5*jo)/15e-13,e.aycof=-.5*p*Uo;var Io=1+e.eta*Math.cos(e.mo);if(e.delmo=Io*Io*Io,e.sinmao=Math.sin(e.mo),e.x7thm1=7*Eo-1,2*o/e.no>=225){e.method="d",e.isimp=1,0,j=e.inclo;var Ro=function(o){var e,s,a,n,d,r,i,c,h,m,l,p,x,g,M,f,u,z,v,y,b,q,w,T,j,E,F,A,C,L,S,U,D,I,R,_,k,O,P,Z,G,H,Y,$,B,J,K,N,Q,V,W,X,oo,to,eo,so,ao,no,ro,io,co,ho,mo,lo=o.epoch,po=o.ep,xo=o.argpp,go=o.tc,Mo=o.inclp,fo=o.nodep,uo=.01675,zo=.0549,vo=o.np,yo=po,bo=Math.sin(fo),qo=Math.cos(fo),wo=Math.sin(xo),To=Math.cos(xo),jo=Math.sin(Mo),Eo=Math.cos(Mo),Fo=yo*yo,Ao=1-Fo,Co=Math.sqrt(Ao),Lo=lo+18261.5+go/1440,So=(4.523602-.00092422029*Lo)%t,Uo=Math.sin(So),Do=Math.cos(So),Io=.91375164-.03568096*Do,Ro=Math.sqrt(1-Io*Io),_o=.089683511*Uo/Ro,ko=Math.sqrt(1-_o*_o),Oo=5.8351514+.001944368*Lo,Po=.39785416*Uo/Ro,Zo=ko*Do+.91744867*_o*Uo;Po=Math.atan2(Po,Zo),Po+=Oo-So;var Go=Math.cos(Po),Ho=Math.sin(Po);y=.1945905,b=-.98088458,T=.91744867,j=.39785416,q=qo,w=bo,l=29864797e-13;for(var Yo=1/vo,$o=0;$o<2;)eo=-6*(e=y*q+b*T*w)*(d=-jo*(i=-y*w+b*T*q)+Eo*(c=b*j))+Fo*(-24*(p=e*To+(s=Eo*i+jo*c)*wo)*(z=d*To)-6*(g=-e*wo+s*To)*(f=d*wo)),so=-6*(e*(r=-jo*(h=b*w+y*T*q)+Eo*(m=y*j))+(a=-b*q+y*T*w)*d)+Fo*(-24*((x=a*To+(n=Eo*h+jo*m)*wo)*z+p*(v=r*To))+-6*(g*(u=r*wo)+(M=-a*wo+n*To)*f)),ao=-6*a*r+Fo*(-24*x*v-6*M*u),no=6*s*d+Fo*(24*p*f-6*g*z),ro=6*(n*d+s*r)+Fo*(24*(x*f+p*u)-6*(M*z+g*v)),io=6*n*r+Fo*(24*x*u-6*M*v),X=(X=3*(e*e+s*s)+(co=12*p*p-3*g*g)*Fo)+X+Ao*co,oo=(oo=6*(e*a+s*n)+(ho=24*p*x-6*g*M)*Fo)+oo+Ao*ho,to=(to=3*(a*a+n*n)+(mo=12*x*x-3*M*M)*Fo)+to+Ao*mo,J=-.5*(K=l*Yo)/Co,B=-15*yo*(N=K*Co),Q=p*g+x*M,V=x*g+p*M,W=x*M-p*g,1===($o+=1)&&(E=B,F=J,A=K,C=N,L=Q,S=V,U=W,D=X,I=oo,R=to,_=eo,k=so,O=ao,P=no,Z=ro,G=io,H=co,Y=ho,$=mo,y=Go,b=Ho,T=Io,j=Ro,q=ko*qo+_o*bo,w=bo*ko-qo*_o,l=4.7968065e-7);return{snodm:bo,cnodm:qo,sinim:jo,cosim:Eo,sinomm:wo,cosomm:To,day:Lo,e3:2*B*W,ee2:2*B*V,em:yo,emsq:Fo,gam:Oo,peo:0,pgho:0,pho:0,pinco:0,plo:0,rtemsq:Co,se2:2*E*S,se3:2*E*U,sgh2:2*C*Y,sgh3:2*C*($-H),sgh4:-18*C*uo,sh2:-2*F*Z,sh3:-2*F*(G-P),si2:2*F*k,si3:2*F*(O-_),sl2:-2*A*I,sl3:-2*A*(R-D),sl4:-2*A*(-21-9*Fo)*uo,s1:B,s2:J,s3:K,s4:N,s5:Q,s6:V,s7:W,ss1:E,ss2:F,ss3:A,ss4:C,ss5:L,ss6:S,ss7:U,sz1:D,sz2:I,sz3:R,sz11:_,sz12:k,sz13:O,sz21:P,sz22:Z,sz23:G,sz31:H,sz32:Y,sz33:$,xgh2:2*N*ho,xgh3:2*N*(mo-co),xgh4:-18*N*zo,xh2:-2*J*ro,xh3:-2*J*(io-no),xi2:2*J*so,xi3:2*J*(ao-eo),xl2:-2*K*oo,xl3:-2*K*(to-X),xl4:-2*K*(-21-9*Fo)*zo,nm:vo,z1:X,z2:oo,z3:to,z11:eo,z12:so,z13:ao,z21:no,z22:ro,z23:io,z31:co,z32:ho,z33:mo,zmol:(.2299715*Lo-Oo+4.7199672)%t,zmos:(6.2565837+.017201977*Lo)%t}}({epoch:go,ep:e.ecco,argpp:e.argpo,tc:0,inclp:e.inclo,nodep:e.nodeo,np:e.no,e3:e.e3,ee2:e.ee2,peo:e.peo,pgho:e.pgho,pho:e.pho,pinco:e.pinco,plo:e.plo,se2:e.se2,se3:e.se3,sgh2:e.sgh2,sgh3:e.sgh3,sgh4:e.sgh4,sh2:e.sh2,sh3:e.sh3,si2:e.si2,si3:e.si3,sl2:e.sl2,sl3:e.sl3,sl4:e.sl4,xgh2:e.xgh2,xgh3:e.xgh3,xgh4:e.xgh4,xh2:e.xh2,xh3:e.xh3,xi2:e.xi2,xi3:e.xi3,xl2:e.xl2,xl3:e.xl3,xl4:e.xl4,zmol:e.zmol,zmos:e.zmos});e.e3=Ro.e3,e.ee2=Ro.ee2,e.peo=Ro.peo,e.pgho=Ro.pgho,e.pho=Ro.pho,e.pinco=Ro.pinco,e.plo=Ro.plo,e.se2=Ro.se2,e.se3=Ro.se3,e.sgh2=Ro.sgh2,e.sgh3=Ro.sgh3,e.sgh4=Ro.sgh4,e.sh2=Ro.sh2,e.sh3=Ro.sh3,e.si2=Ro.si2,e.si3=Ro.si3,e.sl2=Ro.sl2,e.sl3=Ro.sl3,e.sl4=Ro.sl4,n=Ro.sinim,a=Ro.cosim,b=Ro.em,q=Ro.emsq,S=Ro.s1,U=Ro.s2,D=Ro.s3,I=Ro.s4,R=Ro.s5,k=Ro.ss1,O=Ro.ss2,P=Ro.ss3,Z=Ro.ss4,G=Ro.ss5,H=Ro.sz1,Y=Ro.sz3,$=Ro.sz11,B=Ro.sz13,J=Ro.sz21,K=Ro.sz23,N=Ro.sz31,Q=Ro.sz33,e.xgh2=Ro.xgh2,e.xgh3=Ro.xgh3,e.xgh4=Ro.xgh4,e.xh2=Ro.xh2,e.xh3=Ro.xh3,e.xi2=Ro.xi2,e.xi3=Ro.xi3,e.xl2=Ro.xl2,e.xl3=Ro.xl3,e.xl4=Ro.xl4,e.zmol=Ro.zmol,e.zmos=Ro.zmos,E=Ro.nm,ao=Ro.z1,no=Ro.z3,ro=Ro.z11,io=Ro.z13,co=Ro.z21,ho=Ro.z23,mo=Ro.z31,lo=Ro.z33;var _o=u(e,{inclo:j,init:e.init,ep:e.ecco,inclp:e.inclo,nodep:e.nodeo,argpp:e.argpo,mp:e.mo,opsmode:e.operationmode});e.ecco=_o.ep,e.inclo=_o.inclp,e.nodeo=_o.nodep,e.argpo=_o.argpp,e.mo=_o.mp,0,0,0;var ko=function(e){var s,a,n,d,i,c,h,m,l,p,g,M,f,u,z,v,y,b=e.cosim,q=e.argpo,w=e.s1,T=e.s2,j=e.s3,E=e.s4,F=e.s5,A=e.sinim,C=e.ss1,L=e.ss2,S=e.ss3,U=e.ss4,D=e.ss5,I=e.sz1,R=e.sz3,_=e.sz11,k=e.sz13,O=e.sz21,P=e.sz23,Z=e.sz31,G=e.sz33,H=e.t,Y=e.tc,$=e.gsto,B=e.mo,J=e.mdot,K=e.no,N=e.nodeo,Q=e.nodedot,V=e.xpidot,W=e.z1,X=e.z3,oo=e.z11,to=e.z13,eo=e.z21,so=e.z23,ao=e.z31,no=e.z33,ro=e.ecco,io=e.eccsq,co=e.emsq,ho=e.em,mo=e.argpm,lo=e.inclm,po=e.mm,xo=e.nm,go=e.nodem,Mo=e.irez,fo=e.atime,uo=e.d2201,zo=e.d2211,vo=e.d3210,yo=e.d3222,bo=e.d4410,qo=e.d4422,wo=e.d5220,To=e.d5232,jo=e.d5421,Eo=e.d5433,Fo=e.dedt,Ao=e.didt,Co=e.dmdt,Lo=e.dnodt,So=e.domdt,Uo=e.del1,Do=e.del2,Io=e.del3,Ro=e.xfact,_o=e.xlamo,ko=e.xli,Oo=e.xni,Po=.0043752690880113,Zo=.00015835218,Go=119459e-10;Mo=0,xo<.0052359877&&xo>.0034906585&&(Mo=1),xo>=.00826&&xo<=.00924&&ho>=.5&&(Mo=2);var Ho=-Go*L*(O+P);(lo<.052359877||lo>o-.052359877)&&(Ho=0),0!==A&&(Ho/=A);var Yo=-Zo*T*(eo+so);(lo<.052359877||lo>o-.052359877)&&(Yo=0),So=U*Go*(Z+G-6)-b*Ho+E*Zo*(ao+no-6),Lo=Ho,0!==A&&(So-=b/A*Yo,Lo+=Yo/A);var $o=($+Y*Po)%t;if(ho+=(Fo=C*Go*D+w*Zo*F)*H,lo+=(Ao=L*Go*(_+k)+T*Zo*(oo+to))*H,mo+=So*H,go+=Lo*H,po+=(Co=-Go*S*(I+R-14-6*co)-Zo*j*(W+X-14-6*co))*H,0!==Mo){if(z=Math.pow(xo/r,x),2===Mo){var Bo=ho,Jo=co;y=(ho=ro)*(co=io),ho<=.65?(n=3.616-13.247*ho+16.29*co,d=117.39*ho-19.302-228.419*co+156.591*y,i=109.7927*ho-18.9068-214.6334*co+146.5816*y,c=242.694*ho-41.122-471.094*co+313.953*y,h=841.88*ho-146.407-1629.014*co+1083.435*y,m=3017.977*ho-532.114-5740.032*co+3708.276*y):(n=331.819*ho-72.099-508.738*co+266.724*y,d=1582.851*ho-346.844-2415.925*co+1246.113*y,i=1554.908*ho-342.585-2366.899*co+1215.972*y,c=4758.686*ho-1052.797-7193.992*co+3651.957*y,h=16178.11*ho-3581.69-24462.77*co+12422.52*y,m=ho>.715?29936.92*ho-5149.66-54087.36*co+31324.56*y:1464.74-4664.75*ho+3763.64*co),ho<.7?(g=4988.61*ho-919.2277-9064.77*co+5542.21*y,l=4568.6173*ho-822.71072-8491.4146*co+5337.524*y,p=4690.25*ho-853.666-8624.77*co+5341.4*y):(g=161616.52*ho-37995.78-229838.2*co+109377.94*y,l=218913.95*ho-51752.104-309468.16*co+146349.42*y,p=170470.89*ho-40023.88-242699.48*co+115605.82*y),uo=(f=17891679e-13*(u=xo*xo*3*(z*z)))*(s=.75*(1+2*b+(v=b*b)))*(-.306-.44*(ho-.64)),zo=f*(1.5*(M=A*A))*n,vo=(f=3.7393792e-7*(u*=z))*(1.875*A*(1-2*b-3*v))*d,yo=f*(-1.875*A*(1+2*b-3*v))*i,bo=(f=2*(u*=z)*7.3636953e-9)*(35*M*s)*c,qo=f*(39.375*M*M)*h,wo=(f=1.1428639e-7*(u*=z))*(9.84375*A*(M*(1-2*b-5*v)+.33333333*(4*b-2+6*v)))*m,To=f*(A*(4.92187512*M*(-2-4*b+10*v)+6.56250012*(1+2*b-3*v)))*p,jo=(f=2*u*2.1765803e-9)*(29.53125*A*(2-8*b+v*(8*b-12+10*v)))*l,Eo=f*(29.53125*A*(-2-8*b+v*(12+8*b-10*v)))*g,_o=(B+N+N-($o+$o))%t,Ro=J+Co+2*(Q+Lo-Po)-K,ho=Bo,co=Jo}1===Mo&&(a=1+b,Do=2*(Uo=3*xo*xo*z*z)*(s=.75*(1+b)*(1+b))*(1+co*(.8125*co-2.5))*17891679e-13,Io=3*Uo*(a*=1.875*a*a)*(1+co*(6.60937*co-6))*2.2123015e-7*z,Uo=Uo*(.9375*A*A*(1+3*b)-.75*(1+b))*(d=1+2*co)*21460748e-13*z,_o=(B+N+q-$o)%t,Ro=J+V+Co+So+Lo-(K+Po)),ko=_o,Oo=K,fo=0,xo=K+0}return{em:ho,argpm:mo,inclm:lo,mm:po,nm:xo,nodem:go,irez:Mo,atime:fo,d2201:uo,d2211:zo,d3210:vo,d3222:yo,d4410:bo,d4422:qo,d5220:wo,d5232:To,d5421:jo,d5433:Eo,dedt:Fo,didt:Ao,dmdt:Co,dndt:0,dnodt:Lo,domdt:So,del1:Uo,del2:Do,del3:Io,xfact:Ro,xlamo:_o,xli:ko,xni:Oo}}({cosim:a,emsq:q,argpo:e.argpo,s1:S,s2:U,s3:D,s4:I,s5:R,sinim:n,ss1:k,ss2:O,ss3:P,ss4:Z,ss5:G,sz1:H,sz3:Y,sz11:$,sz13:B,sz21:J,sz23:K,sz31:N,sz33:Q,t:e.t,tc:0,gsto:e.gsto,mo:e.mo,mdot:e.mdot,no:e.no,nodeo:e.nodeo,nodedot:e.nodedot,xpidot:eo,z1:ao,z3:no,z11:ro,z13:io,z21:co,z23:ho,z31:mo,z33:lo,ecco:e.ecco,eccsq:Fo,em:b,argpm:0,inclm:j,mm:0,nm:E,nodem:0,irez:e.irez,atime:e.atime,d2201:e.d2201,d2211:e.d2211,d3210:e.d3210,d3222:e.d3222,d4410:e.d4410,d4422:e.d4422,d5220:e.d5220,d5232:e.d5232,d5421:e.d5421,d5433:e.d5433,dedt:e.dedt,didt:e.didt,dmdt:e.dmdt,dnodt:e.dnodt,domdt:e.domdt,del1:e.del1,del2:e.del2,del3:e.del3,xfact:e.xfact,xlamo:e.xlamo,xli:e.xli,xni:e.xni});e.irez=ko.irez,e.atime=ko.atime,e.d2201=ko.d2201,e.d2211=ko.d2211,e.d3210=ko.d3210,e.d3222=ko.d3222,e.d4410=ko.d4410,e.d4422=ko.d4422,e.d5220=ko.d5220,e.d5232=ko.d5232,e.d5421=ko.d5421,e.d5433=ko.d5433,e.dedt=ko.dedt,e.didt=ko.didt,e.dmdt=ko.dmdt,e.dnodt=ko.dnodt,e.domdt=ko.domdt,e.del1=ko.del1,e.del2=ko.del2,e.del3=ko.del3,e.xfact=ko.xfact,e.xlamo=ko.xlamo,e.xli=ko.xli,e.xni=ko.xni}1!==e.isimp&&(i=e.cc1*e.cc1,e.d2=4*wo*to*i,V=e.d2*to*e.cc1/3,e.d3=(17*wo+_)*V,e.d4=.5*V*wo*to*(221*wo+31*_)*e.cc1,e.t3cof=e.d2+2*i,e.t4cof=.25*(3*e.d3+e.cc1*(12*e.d2+10*i)),e.t5cof=.2*(3*e.d4+12*e.cc1*e.d3+6*e.d2*e.d2+15*i*(2*e.d2+i)))}y(e,0),e.init="n"}function q(o){return function(o){if(Array.isArray(o))return w(o)}(o)||function(o){if("undefined"!=typeof Symbol&&null!=o[Symbol.iterator]||null!=o["@@iterator"])return Array.from(o)}(o)||function(o,t){if(!o)return;if("string"==typeof o)return w(o,t);var e=Object.prototype.toString.call(o).slice(8,-1);"Object"===e&&o.constructor&&(e=o.constructor.name);if("Map"===e||"Set"===e)return Array.from(o);if("Arguments"===e||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(e))return w(o,t)}(o)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function w(o,t){(null==t||t>o.length)&&(t=o.length);for(var e=0,s=new Array(t);e<t;e++)s[e]=o[e];return s}function T(o){return o*s}function j(o){return o*e}function E(o){var t=o.longitude,e=o.latitude,s=o.height,a=6378.137,n=(a-6356.7523142)/a,d=2*n-n*n,r=a/Math.sqrt(1-d*(Math.sin(e)*Math.sin(e)));return{x:(r+s)*Math.cos(e)*Math.cos(t),y:(r+s)*Math.cos(e)*Math.sin(t),z:(r*(1-d)+s)*Math.sin(e)}}var F={constants:Object.freeze({__proto__:null,deg2rad:e,earthRadius:d,j2:h,j3:m,j3oj2:p,j4:l,minutesPerDay:a,mu:n,pi:o,rad2deg:s,tumin:c,twoPi:t,vkmpersec:i,x2o3:x,xke:r}),propagate:function(){for(var o=arguments.length,t=new Array(o),e=0;e<o;e++)t[e]=arguments[e];var s=t[0],n=Array.prototype.slice.call(t,1),d=f.apply(void 0,q(n)),r=(d-s.jdsatepoch)*a;return y(s,r)},sgp4:y,twoline2satrec:function(t,s){var a=1440/(2*o),n=0,d={error:0};d.satnum=t.substring(2,7),d.epochyr=parseInt(t.substring(18,20),10),d.epochdays=parseFloat(t.substring(20,32)),d.ndot=parseFloat(t.substring(33,43)),d.nddot=parseFloat(".".concat(parseInt(t.substring(44,50),10),"E").concat(t.substring(50,52))),d.bstar=parseFloat("".concat(t.substring(53,54),".").concat(parseInt(t.substring(54,59),10),"E").concat(t.substring(59,61))),d.inclo=parseFloat(s.substring(8,16)),d.nodeo=parseFloat(s.substring(17,25)),d.ecco=parseFloat(".".concat(s.substring(26,33))),d.argpo=parseFloat(s.substring(34,42)),d.mo=parseFloat(s.substring(43,51)),d.no=parseFloat(s.substring(52,63)),d.no/=a,d.inclo*=e,d.nodeo*=e,d.argpo*=e,d.mo*=e;var r=g(n=d.epochyr<57?d.epochyr+2e3:d.epochyr+1900,d.epochdays),i=r.mon,c=r.day,h=r.hr,m=r.minute,l=r.sec;return d.jdsatepoch=f(n,i,c,h,m,l),b(d,{opsmode:"i",satn:d.satnum,epoch:d.jdsatepoch-2433281.5,xbstar:d.bstar,xecco:d.ecco,xargpo:d.argpo,xinclo:d.inclo,xmo:d.mo,xno:d.no,xnodeo:d.nodeo}),d},gstime:v,jday:f,invjday:function(o,t){var e=o-2415019.5,s=e/365.25,a=1900+Math.floor(s),n=Math.floor(.25*(a-1901)),d=e-(365*(a-1900)+n)+1e-11;d<1&&(d=e-(365*((a-=1)-1900)+(n=Math.floor(.25*(a-1901)))));var r=g(a,d),i=r.mon,c=r.day,h=r.hr,m=r.minute,l=r.sec-864e-9;return t?[a,i,c,h,m,Math.floor(l)]:new Date(Date.UTC(a,i-1,c,h,m,Math.floor(l)))},dopplerFactor:function(o,t,e){var s=7292115e-11,a={x:t.x-o.x,y:t.y-o.y,z:t.z-o.z};a.w=Math.sqrt(Math.pow(a.x,2)+Math.pow(a.y,2)+Math.pow(a.z,2));var n=e.x+s*o.y,d=e.y-s*o.x,r=e.z,i=(a.x*n+a.y*d+a.z*r)/a.w;return 1+i/299792.458*(i>=0?1:-1)},radiansToDegrees:T,degreesToRadians:j,degreesLat:function(t){if(t<-o/2||t>o/2)throw new RangeError("Latitude radians must be in range [-pi/2; pi/2].");return T(t)},degreesLong:function(t){if(t<-o||t>o)throw new RangeError("Longitude radians must be in range [-pi; pi].");return T(t)},radiansLat:function(o){if(o<-90||o>90)throw new RangeError("Latitude degrees must be in range [-90; 90].");return j(o)},radiansLong:function(o){if(o<-180||o>180)throw new RangeError("Longitude degrees must be in range [-180; 180].");return j(o)},geodeticToEcf:E,eciToGeodetic:function(e,s){for(var a=6378.137,n=Math.sqrt(e.x*e.x+e.y*e.y),d=(a-6356.7523142)/a,r=2*d-d*d,i=Math.atan2(e.y,e.x)-s;i<-o;)i+=t;for(;i>o;)i-=t;for(var c,h=0,m=Math.atan2(e.z,Math.sqrt(e.x*e.x+e.y*e.y));h<20;)c=1/Math.sqrt(1-r*(Math.sin(m)*Math.sin(m))),m=Math.atan2(e.z+a*c*r*Math.sin(m),n),h+=1;return{longitude:i,latitude:m,height:n/Math.cos(m)-a*c}},eciToEcf:function(o,t){return{x:o.x*Math.cos(t)+o.y*Math.sin(t),y:o.x*-Math.sin(t)+o.y*Math.cos(t),z:o.z}},ecfToEci:function(o,t){return{x:o.x*Math.cos(t)-o.y*Math.sin(t),y:o.x*Math.sin(t)+o.y*Math.cos(t),z:o.z}},ecfToLookAngles:function(t,e){var s,a,n,d,r,i,c=function(o,t){var e=o.longitude,s=o.latitude,a=E(o),n=t.x-a.x,d=t.y-a.y,r=t.z-a.z;return{topS:Math.sin(s)*Math.cos(e)*n+Math.sin(s)*Math.sin(e)*d-Math.cos(s)*r,topE:-Math.sin(e)*n+Math.cos(e)*d,topZ:Math.cos(s)*Math.cos(e)*n+Math.cos(s)*Math.sin(e)*d+Math.sin(s)*r}}(t,e);return a=(s=c).topS,n=s.topE,d=s.topZ,r=Math.sqrt(a*a+n*n+d*d),i=Math.asin(d/r),{azimuth:Math.atan2(-n,a)+o,elevation:i,rangeSat:r}}};return F}));
+</script>
+<script>
+var TLE_DATA=`AO-07
+1 07530U 74089B   26165.25919906 -.00000031  00000-0  98943-4 0  9996
+2 07530 101.9901 178.4753 0012540 135.5580 235.9820 12.53698067360153
+UO-11
+1 14781U 84021B   26165.20095834  .00001160  00000-0  12366-3 0  9996
+2 14781  97.8057 130.8090 0007353 182.6210 177.4971 14.90776632256686
+LO-19
+1 20442U 90005G   26164.97260120  .00000110  00000-0  56016-4 0  9996
+2 20442  98.8851 186.6896 0010942 210.9813 149.0727 14.34122315901935
+AO-27
+1 22825U 93061C   26165.20292012  .00000088  00000-0  50393-4 0  9996
+2 22825  98.6880 232.6175 0009510 107.4097 252.8126 14.30941512706570
+FO-29
+1 24278U 96046B   26165.13192875  .00000020  00000-0  52658-4 0  9996
+2 24278  98.5241  14.4226 0350867 104.3391 259.6965 13.53274148472758
+GO-32
+1 25397U 98043D   26164.97369743  .00000055  00000-0  43938-4 0  9998
+2 25397  99.0066 157.6512 0000887 169.9985 190.1211 14.24427891450876
+ISS
+1 25544U 98067A   26165.09325831  .00008623  00000-0  16324-3 0  9999
+2 25544  51.6335 315.4063 0004936 183.6835 176.4118 15.49219019571274
+NO-44
+1 26931U 01043C   26165.29565329  .00000096  00000-0  66841-4 0  9994
+2 26931  67.0507 251.7506 0006072 264.5496  95.4913 14.31955183290030
+SO-50
+1 27607U 02058C   26165.25570183  .00000931  00000-0  12707-3 0  9991
+2 27607  64.5509 138.0554 0075327 263.0161  96.2373 14.83041207264026
+CO-55
+1 27844U 03031E   26165.01650923  .00000269  00000-0  13536-3 0  9996
+2 27844  98.6736 173.6152 0009316 187.2201 172.8845 14.24333986191224
+RS-22
+1 27939U 03042A   26165.29524249  .00001006  00000-0  16324-3 0  9992
+2 27939  98.3466 349.5726 0009986 280.2575 157.7014 14.73462884215128
+CO-65
+1 32785U 08021C   26165.19938055  .00004778  00000-0  30257-3 0  9992
+2 32785  97.8270 146.5558 0010151  48.5281 311.6817 15.09428490984741
+CO-66
+1 32791U 08021J   26164.93655222  .00018728  00000-0  59582-3 0  9994
+2 32791  97.7509 162.6789 0001549  14.7739 345.3547 15.32650243986791
+RS-30
+1 32953U 08025A   26165.28173090  .00000120  00000-0  79345-3 0  9991
+2 32953  82.5044 357.2484 0018975 320.4859  39.4837 12.43179589819338
+SRMSAT
+1 37841U 11058D   26165.10596875  .00000361  00000-0  51961-4 0  9995
+2 37841  19.9719  78.1172 0011859 169.7435 229.6321 14.11574987757388
+ZACUBE-1
+1 39417U 13066B   26165.14115578  .00003529  00000-0  27550-3 0  9993
+2 39417  97.8083 127.4617 0040472 258.3287 101.3393 15.01173415680272
+Delfi-N3xt
+1 39428U 13066N   26165.30000046  .00004660  00000-0  40874-3 0  9997
+2 39428  97.8343  85.6146 0073490 215.4841 144.1479 14.95054935674192
+GOMX-1
+1 39430U 13066Q   26165.25794256  .00001978  00000-0  30067-3 0  9999
+2 39430  97.6485   5.9059 0130191  86.8493 274.7601 14.69450522669489
+LO-74
+1 39440U 13066AA  26165.11577810  .00004533  00000-0  41941-3 0  9993
+2 39440  97.8903 114.0809 0058614  38.9303 321.6115 14.93738647676539
+AO-73
+1 39444U 13066AE  26164.87461990  .00007372  00000-0  45803-3 0  9995
+2 39444  97.8267 136.2511 0035377 212.6416 147.2626 15.09452478679163
+DTUSAT-2
+1 40030U 14033W   26165.26575400  .00007134  00000-0  38597-3 0  9997
+2 40030  98.0858 162.8073 0006416 237.2911 122.7702 15.14985369652247
+LILACSAT-2
+1 40908U 15049K   26165.17625778  .00017413  00000-0  29746-3 0  9990
+2 40908  97.4649 201.9032 0005354 259.3379 100.7270 15.51356675595284
+Horyu-4
+1 41340U 16012D   26165.18331445  .00430944  66472-4  11344-2 0  9999
+2 41340  30.9846 101.0543 0004612 251.9494 108.0665 15.93563943570337
+Lapan A3
+1 41603U 16040E   26165.25401409  .00003268  00000-0  10443-3 0  9994
+2 41603  97.1482 161.4960 0011232  35.5821 324.6168 15.33087599554360
+CAS-2T
+1 41847U 16066G   26165.19312685  .00001608  00000-0  23241-3 0  9998
+2 41847  98.3820 240.9636 0342703 138.5317 224.2432 14.44685244504362
+TechnoSat
+1 42829U 17042E   26165.25725383  .00003971  00000-0  28337-3 0  9990
+2 42829  97.4270 323.0265 0018800 103.4060 256.9264 15.04941924486267
+AO-91
+1 43017U 17073E   26165.16518689  .00008607  00000-0  37613-3 0  9991
+2 43017  97.4711  32.4423 0150020 339.7577  19.7744 15.12676252464938
+S-Net D
+1 43186U 18014G   26165.29502880  .00005089  00000-0  26336-3 0  9995
+2 43186  97.5371  70.1040 0009213  39.1918 320.9980 15.16648458458325
+S-Net B
+1 43187U 18014H   26165.30642462  .00004644  00000-0  24079-3 0  9997
+2 43187  97.5379  70.1021 0009726  34.4282 325.7579 15.16618848458321
+S-Net A
+1 43188U 18014J   26165.22794561  .00005201  00000-0  26897-3 0  9997
+2 43188  97.5388  70.2319 0009609  35.3723 324.8145 15.16655783458310
+S-Net C
+1 43189U 18014K   26165.24430765  .00004633  00000-0  24025-3 0  9992
+2 43189  97.5403  70.3226 0010783  27.3893 332.7906 15.16610423456864
+Ten-Koh
+1 43677U 18084G   26165.26085641  .00002107  00000-0  16167-3 0  9994
+2 43677  98.0774 357.5013 0011296 122.7548 237.4766 15.02933373415726
+PO-101
+1 43678U 18084H   26165.23560101  .00002442  00000-0  19907-3 0  9998
+2 43678  98.1178   1.3158 0012341 179.7166 180.4066 15.00439453415773
+QO-100
+1 43700U 18090A   26165.19473333  .00000153  00000-0  00000-0 0  9994
+2 43700   0.0008 357.8194 0001514 125.2169 235.3627  1.00269087 27648
+MinXSS-2
+1 43758U 18099A   26165.05127242  .00034951  00000-0  69858-3 0  9998
+2 43758  97.4547 241.2439 0006447 268.3563  91.6948 15.46704865413645
+AO-95
+1 43770U 18099N   26165.12822934  .00011968  00000-0  45845-3 0  9993
+2 43770  97.4390 225.3853 0008298   9.0334 351.1052 15.26654463412757
+SNUSat 2
+1 43782U 18099AA  26165.11141786  .00008628  00000-0  38269-3 0  9995
+2 43782  97.4062 218.5423 0008763 311.0758  48.9720 15.21797709412564
+SnugLite
+1 43784U 18099AC  26165.12959470  .00011763  00000-0  44475-3 0  9995
+2 43784  97.3877 219.4395 0001292 317.8162  42.2978 15.27120086412858
+ITASat 1
+1 43786U 18099AE  26165.12326008  .00006642  00000-0  31978-3 0  9996
+2 43786  97.4033 216.6958 0012428  11.1997 348.9512 15.19023460412446
+EAGLET 1
+1 43790U 18099AJ  26165.07657307  .00004593  00000-0  26402-3 0  9993
+2 43790  97.4235 214.8274 0010996   5.3059 354.8287 15.12919971411862
+ESEO
+1 43792U 18099AL  26164.85430318  .00002196  00000-0  16198-3 0  9999
+2 43792  97.3970 202.3849 0011681 351.0456   9.0560 15.04235786411301
+JO-97
+1 43803U 18099AX  26165.15960116  .00016674  00000-0  51563-3 0  9991
+2 43803  97.4134 227.9830 0004214 277.2169  82.8595 15.33568110413169
+Suomi 100
+1 43804U 18099AY  26165.12913964  .00012822  00000-0  46634-3 0  9992
+2 43804  97.4196 225.5335 0008364 292.2364  67.7988 15.28353020412956
+ISAT
+1 43879U 18111D   26165.28503229  .00092545  00000-0  94288-3 0  9993
+2 43879  97.5885 100.2842 0000832  88.1423 271.9931 15.64819747410718
+UWE-4
+1 43880U 18111E   26165.30258735  .00032250  00000-0  66149-3 0  9999
+2 43880  97.5859  93.5612 0006031 355.2213   4.8977 15.45969448410336
+Sparrow
+1 43881U 18111F   26165.07954081  .00158918  00000-0  11201-2 0  9999
+2 43881  97.6123 105.6259 0004435 108.6356 251.5389 15.73596164410888
+Prox-1
+1 44339U 19036A   26165.24564168  .00013018  00000-0  12702-2 0  9995
+2 44339  23.9929 133.9015 0005534   2.9449 357.1083 14.90548290373031
+Taurus 1
+1 44530U 19059C   26165.32000660  .00004699  00000-0  75574-3 0  9996
+2 44530  98.6403 329.9700 0007565 326.5447  33.5280 14.72068173358222
+TO-108
+1 44881U 19093C   26165.28493229  .00001044  00000-0  12383-3 0  9995
+2 44881  97.7536 237.5873 0015036  95.7186 264.5744 14.86515020350989
+RS-44
+1 44909U 19096E   26165.19066042  .00000023  00000-0  42004-4 0  9998
+2 44909  82.5218 341.6965 0218056 151.1526 210.1839 12.79748810301961
+SALSAT
+1 46495U 20068K   26165.00581426  .00008178  00000-0  28632-3 0  9998
+2 46495  97.8843 167.8766 0008281 321.5879  38.4769 15.29759103314876
+CSS (TIANHE-1)
+1 48274U 21035A   26165.16154444  .00024349  00000-0  28784-3 0  9999
+2 48274  41.4696 340.4133 0007701  52.5906 307.5633 15.60689990292695
+CUTE
+1 49263U 21088D   26165.23475129  .00155482  11148-4  46383-3 0  9997
+2 49263  97.4170 264.2458 0007676 233.0428 127.0144 15.92383834262086
+TeikyoSat 4
+1 49396U 21102B   26165.07136645  .00001647  00000-0  10651-3 0  9993
+2 49396  97.3671 194.6760 0010669 308.9733  51.0546 15.09499305252256
+Z-Sat
+1 49399U 21102E   26165.29806899  .00004763  00000-0  23520-3 0  9996
+2 49399  97.3329 200.7082 0014902 256.3696 103.5879 15.18246968253004
+KOSEN 1
+1 49402U 21102H   26165.06135301  .00008131  00000-0  31069-3 0  9999
+2 49402  97.3188 207.2792 0012865 212.0017 148.0442 15.26797048253542
+HO-113
+1 50466U 21131B   26165.27784161  .00000541  00000-0  18072-3 0  9996
+2 50466  98.4982 257.6830 0005336 103.2580 256.9204 14.41355242234693
+SNUGLITE 2
+1 52899U 22065F   26165.16116136  .00000849  00000-0  16989-3 0  9990
+2 52899  98.2197 309.9971 0008191  41.6961 318.4865 14.64342706210550
+UmKA 1 (RS40S)
+1 57172U 23091G   26165.19886139  .00006176  00000-0  28271-3 0  9995
+2 57172  97.5056 223.9073 0014132 126.9272 233.3260 15.20787062163559
+CubeBel-2 (EU11S)
+1 57175U 23091K   26165.23907900  .00013032  00000-0  46308-3 0  9993
+2 57175  97.5059 228.4293 0011254 123.4766 236.7551 15.29087977163851
+RS-38S
+1 57189U 23091Z   26165.28115683  .00017425  00000-0  49928-3 0  9993
+2 57189  97.5100 234.7078 0008434  86.2910 273.9298 15.35944470164249
+SONATE-2
+1 59112U 24043Q   26164.99241653  .00038437  00000-0  50299-3 0  9992
+2 59112  97.5521 315.1932 0006915 205.9654 154.1256 15.58498683127398
+GRBBeta
+1 60237U 24128C   26164.90161066  .00003495  00000-0  24477-3 0  9991
+2 60237  61.9894 227.7936 0041064 133.9799 226.4693 15.06620638105778
+Curium One
+1 60242U 24128H   26165.26121309  .00006270  00000-0  36427-3 0  9995
+2 60242  61.9774 216.1380 0040162 130.0831 230.3797 15.12480185106014
+ROBUSTA-3A
+1 60243U 24128J   26165.29050367  .00006233  00000-0  37012-3 0  9994
+2 60243  61.9856 218.4883 0041668 127.6006 232.8884 15.11650187105986
+CatSat
+1 60246U 24125J   26165.12197483  .00068888  00000-0  89376-3 0  9991
+2 60246  97.2084  17.5841 0022226 190.2009 169.8800 15.58321660106917
+HYPERVIEW-1G (RS66S)
+1 61772U 24199AP  26165.26794521  .00136151  00000-0  90107-3 0  9991
+2 61772  97.2882  44.8415 0003087 234.0403 126.0576 15.75138405134218
+AO-123
+1 61781U 24199AY  26165.29791694  .00007519  00000-0  21879-3 0  9997
+2 61781  97.3006  33.9954 0012534 325.5504  34.4926 15.35639171133480
+JINJUSat 1B
+1 63210U 25052A   26164.94849117  .00016991  00000-0  52780-3 0  9999
+2 63210  97.4011  61.6997 0005499  98.3498 261.8367 15.33412525 69607
+NUSHSAT 1
+1 63211U 25052B   26165.25797554  .00020851  00000-0  59847-3 0  9993
+2 63211  97.3993  62.5650 0005210 100.2597 259.9234 15.35871806 69699
+TEVEL2-4
+1 63213U 25052D   26165.24787499  .00018966  00000-0  56859-3 0  9995
+2 63213  97.3916  61.6351 0004817 109.6731 250.5032 15.34521114 69662
+TEVEL2-5
+1 63214U 25052E   26165.13761332  .00019767  00000-0  59574-3 0  9999
+2 63214  97.3913  61.4736 0004713 110.5987 249.5761 15.34345297 69645
+TEVEL2-6
+1 63215U 25052F   26165.28031027  .00018628  00000-0  56220-3 0  9997
+2 63215  97.3919  61.6008 0004644 110.4903 249.6839 15.34313968 69665
+TEVEL2-1
+1 63217U 25052H   26165.24308869  .00018167  00000-0  55762-3 0  9994
+2 63217  97.3887  61.1915 0004629 119.5587 240.6117 15.33782772 69644
+TEVEL2-3
+1 63218U 25052J   26165.23783726  .00017827  00000-0  54634-3 0  9992
+2 63218  97.3893  61.2078 0004602 119.3991 240.7711 15.33837086 69641
+TEVEL2-2
+1 63219U 25052K   26165.24341888  .00018234  00000-0  55953-3 0  9991
+2 63219  97.3886  61.1944 0004639 119.8563 240.3141 15.33790939 69643
+TEVEL2-9
+1 63237U 25052AD  26165.28236824  .00016318  00000-0  53265-3 0  9993
+2 63237  97.3950  60.6144 0007557 138.8374 221.3439 15.31820596 69587
+TEVEL2-7
+1 63238U 25052AE  26165.25738366  .00015403  00000-0  50763-3 0  9993
+2 63238  97.3957  60.5072 0007596 139.3804 220.8005 15.31524555 69579
+TEVEL2-8
+1 63239U 25052AF  26165.20026774  .00015772  00000-0  51998-3 0  9992
+2 63239  97.3953  60.4271 0007655 140.3023 219.8780 15.31507212 69565
+SPIRONE
+1 66657U 25274H   26165.30712011  .00001699  00000-0  16643-3 0  9993
+2 66657  97.7485  94.6397 0012952  30.8625 329.3354 14.93536494 29797
+K-HERO
+1 66660U 25274L   26165.24554056  .00001434  00000-0  13983-3 0  9994
+2 66660  97.7492  94.7378 0014908  34.0561 326.1612 14.93953339 29790
+SNUGLITE-III DURI
+1 66661U 25274M   26164.76456643  .00001872  00000-0  18067-3 0  9998
+2 66661  97.7488  94.2836 0015577  36.3265 323.9009 14.93992527 29729
+SAKHACUBE-CHOLBON
+1 67290U 25313AU  26164.94480660  .00010023  00000-0  40586-3 0  9996
+2 67290  97.3940 240.0197 0009187  17.0300 343.1245 15.24836520 25484
+RS95S (QMR-KWT-2)
+1 67291U 25313AV  26165.19828612  .00013462  00000-0  52185-3 0  9996
+2 67291  97.3939 240.4393 0008515  14.4843 345.6637 15.26226057 25530
+Ten-Koh2
+1 68261U 25241B   26164.73680357  .00006404  00000-0  27529-3 0  9997
+2 68261  51.6690 336.0488 0006153 131.9558 228.1945 15.23867079 14386
+JACK-002
+1 68417U 26067B   26164.86852132  .00006607  00000-0  31564-3 0  9992
+2 68417  97.4564 123.5001 0000597  11.9931 348.1318 15.19358285 11445
+DISCO 2
+1 68431U 26067R   26165.28422443  .00007832  00000-0  37699-3 0  9999
+2 68431  97.4600 123.8994 0003103  48.6591 311.4910 15.19034344 11506
+HADES-SA (SpinnyONE)
+1 68446U 26067AG  26165.12573244  .00018327  00000-0  87744-3 0  9991
+2 68446  97.4396 123.4675 0009588  89.7166 270.5168 15.18966575 11467
+PARUS-6U1
+1 68456U 26067AS  26165.15521757  .00006243  00000-0  31466-3 0  9991
+2 68456  97.4549 123.5653 0007566  79.6321 280.5765 15.17489093 11479
+SAL-E
+1 68458U 26067AU  26165.15112065  .00008193  00000-0  40906-3 0  9996
+2 68458  97.4473 123.4992 0008000  86.9612 273.2537 15.17718803 11470
+FSI-SAT 2
+1 68792U 26088A   26164.96543333  .00005332  00000-0  36100-3 0  9997
+2 68792  97.5053 314.3055 0015582 116.8310 243.4514 15.06811321  7801
+OrigamiSat 2
+1 68795U 26088D   26163.91742595  .00003406  00000-0  22097-3 0  9995
+2 68795  97.5058 313.4073 0016628  95.5779 264.7346 15.08635651  7657
+ARICA 2
+1 68796U 26088E   26164.91095685  .00004643  00000-0  30156-3 0  9997
+2 68796  97.5047 314.3708 0017016  90.6025 269.7153 15.08402131  7806
+WASEDA-SAT-ZERO-II
+1 68797U 26088F   26164.90713154  .00006853  00000-0  44064-3 0  9993
+2 68797  97.5042 314.3746 0016779  90.6682 269.6470 15.08607256  7804
+MANGARO-II-Piscus
+1 68798U 26088G   26165.29583475  .00004510  00000-0  28973-3 0  9997
+2 68798  97.5060 314.7827 0020437  91.7270 268.6300 15.08766119  7861
+IO-86
+1 40931U          25360.30710720  .00000000  00000-0  12800-3 0    00
+2 40931   6.0006 332.5373 0012733 338.8432   8.1437 14.79075515    01
+LILIUM-4
+1 71922C 26067AC  26089.50133053 -.00014632  00000 0 -74472-3 0    04
+2 71922  97.4497  49.1617 0004341   5.9603 355.7042 15.16896692    16
+STARLINK-1000
+1 50000U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50000  53.0536   0.0000 0001420  77.6141   0.0000 15.06335771 10001
+STARLINK-1001
+1 50001U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50001  53.0536   0.0000 0001420  79.5961  45.0000 15.06190012 10009
+STARLINK-1002
+1 50002U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50002  53.0536   0.0000 0001420  84.1310  90.0000 15.06374588 10002
+STARLINK-1003
+1 50003U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50003  53.0536   0.0000 0001420  78.2334 135.0000 15.06436872 10008
+STARLINK-1004
+1 50004U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50004  53.0536   0.0000 0001420  77.6620 180.0000 15.06248769 10006
+STARLINK-1005
+1 50005U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50005  53.0536   0.0000 0001420  82.4176 225.0000 15.06167455 10009
+STARLINK-1006
+1 50006U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50006  53.0536   0.0000 0001420  79.3524 270.0000 15.06090614 10004
+STARLINK-1007
+1 50007U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50007  53.0536   0.0000 0001420  82.8134 315.0000 15.06339954 10004
+STARLINK-1008
+1 50008U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50008  53.0536  15.0000 0001420  83.2567   2.0000 15.06168176 10005
+STARLINK-1009
+1 50009U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50009  53.0536  15.0000 0001420  77.4290  47.0000 15.06403772 10007
+STARLINK-1010
+1 50010U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50010  53.0536  15.0000 0001420  84.3454  92.0000 15.06402328 10004
+STARLINK-1011
+1 50011U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50011  53.0536  15.0000 0001420  78.9188 137.0000 15.06216100 10009
+STARLINK-1012
+1 50012U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50012  53.0536  15.0000 0001420  80.7299 182.0000 15.06462885 10007
+STARLINK-1013
+1 50013U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50013  53.0536  15.0000 0001420  78.3312 227.0000 15.06117098 10000
+STARLINK-1014
+1 50014U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50014  53.0536  15.0000 0001420  83.4013 272.0000 15.06418998 10009
+STARLINK-1015
+1 50015U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50015  53.0536  15.0000 0001420  84.6613 317.0000 15.06402851 10000
+STARLINK-1016
+1 50016U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50016  53.0536  30.0000 0001420  87.0952   4.0000 15.06294491 10003
+STARLINK-1017
+1 50017U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50017  53.0536  30.0000 0001420  82.8844  49.0000 15.06231414 10002
+STARLINK-1018
+1 50018U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50018  53.0536  30.0000 0001420  83.5492  94.0000 15.06411762 10006
+STARLINK-1019
+1 50019U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50019  53.0536  30.0000 0001420  83.1375 139.0000 15.06424683 10009
+STARLINK-1020
+1 50020U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50020  53.0536  30.0000 0001420  77.8222 184.0000 15.06361829 10004
+STARLINK-1021
+1 50021U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50021  53.0536  30.0000 0001420  80.2579 229.0000 15.06171159 10003
+STARLINK-1022
+1 50022U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50022  53.0536  30.0000 0001420  79.6919 274.0000 15.06111917 10000
+STARLINK-1023
+1 50023U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50023  53.0536  30.0000 0001420  80.1437 319.0000 15.06120401 10001
+STARLINK-1024
+1 50024U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50024  53.0536  45.0000 0001420  81.0123   6.0000 15.06334274 10008
+STARLINK-1025
+1 50025U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50025  53.0536  45.0000 0001420  79.4591  51.0000 15.06228072 10007
+STARLINK-1026
+1 50026U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50026  53.0536  45.0000 0001420  86.7305  96.0000 15.06186791 10002
+STARLINK-1027
+1 50027U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50027  53.0536  45.0000 0001420  83.4553 141.0000 15.06339214 10003
+STARLINK-1028
+1 50028U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50028  53.0536  45.0000 0001420  84.6553 186.0000 15.06148455 10001
+STARLINK-1029
+1 50029U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50029  53.0536  45.0000 0001420  81.1586 231.0000 15.06145361 10004
+STARLINK-1030
+1 50030U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50030  53.0536  45.0000 0001420  83.7640 276.0000 15.06475809 10007
+STARLINK-1031
+1 50031U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50031  53.0536  45.0000 0001420  84.2101 321.0000 15.06302780 10004
+STARLINK-1032
+1 50032U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50032  53.0536  60.0000 0001420  85.1240   8.0000 15.06417141 10006
+STARLINK-1033
+1 50033U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50033  53.0536  60.0000 0001420  77.6850  53.0000 15.06171619 10007
+STARLINK-1034
+1 50034U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50034  53.0536  60.0000 0001420  80.0414  98.0000 15.06206181 10004
+STARLINK-1035
+1 50035U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50035  53.0536  60.0000 0001420  86.7931 143.0000 15.06164393 10001
+STARLINK-1036
+1 50036U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50036  53.0536  60.0000 0001420  80.5108 188.0000 15.06430547 10006
+STARLINK-1037
+1 50037U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50037  53.0536  60.0000 0001420  81.3203 233.0000 15.06342175 10002
+STARLINK-1038
+1 50038U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50038  53.0536  60.0000 0001420  81.9525 278.0000 15.06445819 10004
+STARLINK-1039
+1 50039U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50039  53.0536  60.0000 0001420  79.8303 323.0000 15.06185952 10005
+STARLINK-1040
+1 50040U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50040  53.0536  75.0000 0001420  79.9914  10.0000 15.06304547 10008
+STARLINK-1041
+1 50041U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50041  53.0536  75.0000 0001420  86.3422  55.0000 15.06313834 10003
+STARLINK-1042
+1 50042U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50042  53.0536  75.0000 0001420  79.5572 100.0000 15.06239760 10000
+STARLINK-1043
+1 50043U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50043  53.0536  75.0000 0001420  82.4593 145.0000 15.06479015 10005
+STARLINK-1044
+1 50044U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50044  53.0536  75.0000 0001420  77.8352 190.0000 15.06116364 10002
+STARLINK-1045
+1 50045U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50045  53.0536  75.0000 0001420  83.6385 235.0000 15.06123860 10003
+STARLINK-1046
+1 50046U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50046  53.0536  75.0000 0001420  81.5856 280.0000 15.06396832 10005
+STARLINK-1047
+1 50047U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50047  53.0536  75.0000 0001420  81.1802 325.0000 15.06105411 10004
+STARLINK-1048
+1 50048U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50048  53.0536  90.0000 0001420  82.6551  12.0000 15.06478449 10006
+STARLINK-1049
+1 50049U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50049  53.0536  90.0000 0001420  85.9718  57.0000 15.06468431 10007
+STARLINK-1050
+1 50050U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50050  53.0536  90.0000 0001420  84.5712 102.0000 15.06084592 10001
+STARLINK-1051
+1 50051U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50051  53.0536  90.0000 0001420  82.7337 147.0000 15.06352684 10004
+STARLINK-1052
+1 50052U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50052  53.0536  90.0000 0001420  83.7736 192.0000 15.06186730 10006
+STARLINK-1053
+1 50053U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50053  53.0536  90.0000 0001420  81.7117 237.0000 15.06124621 10009
+STARLINK-1054
+1 50054U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50054  53.0536  90.0000 0001420  86.9022 282.0000 15.06261489 10006
+STARLINK-1055
+1 50055U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50055  53.0536  90.0000 0001420  79.9979 327.0000 15.06430341 10005
+STARLINK-1056
+1 50056U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50056  53.0536 105.0000 0001420  79.1505  14.0000 15.06280234 10007
+STARLINK-1057
+1 50057U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50057  53.0536 105.0000 0001420  86.0692  59.0000 15.06445051 10001
+STARLINK-1058
+1 50058U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50058  53.0536 105.0000 0001420  83.7535 104.0000 15.06199378 10001
+STARLINK-1059
+1 50059U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50059  53.0536 105.0000 0001420  78.8924 149.0000 15.06323588 10000
+STARLINK-1060
+1 50060U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50060  53.0536 105.0000 0001420  82.7578 194.0000 15.06385004 10002
+STARLINK-1061
+1 50061U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50061  53.0536 105.0000 0001420  82.6675 239.0000 15.06391451 10003
+STARLINK-1062
+1 50062U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50062  53.0536 105.0000 0001420  80.6056 284.0000 15.06080229 10003
+STARLINK-1063
+1 50063U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50063  53.0536 105.0000 0001420  86.6550 329.0000 15.06087791 10000
+STARLINK-1064
+1 50064U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50064  53.0536 120.0000 0001420  85.6807  16.0000 15.06431489 10002
+STARLINK-1065
+1 50065U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50065  53.0536 120.0000 0001420  77.9433  61.0000 15.06203006 10004
+STARLINK-1066
+1 50066U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50066  53.0536 120.0000 0001420  86.8335 106.0000 15.06431204 10008
+STARLINK-1067
+1 50067U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50067  53.0536 120.0000 0001420  82.2239 151.0000 15.06114261 10003
+STARLINK-1068
+1 50068U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50068  53.0536 120.0000 0001420  84.9700 196.0000 15.06107685 10007
+STARLINK-1069
+1 50069U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50069  53.0536 120.0000 0001420  78.6479 241.0000 15.06386334 10002
+STARLINK-1070
+1 50070U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50070  53.0536 120.0000 0001420  82.8620 286.0000 15.06270113 10005
+STARLINK-1071
+1 50071U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50071  53.0536 120.0000 0001420  86.0883 331.0000 15.06186023 10000
+STARLINK-1072
+1 50072U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50072  53.0536 135.0000 0001420  79.4820  18.0000 15.06249255 10003
+STARLINK-1073
+1 50073U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50073  53.0536 135.0000 0001420  84.6633  63.0000 15.06295718 10009
+STARLINK-1074
+1 50074U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50074  53.0536 135.0000 0001420  80.4812 108.0000 15.06160460 10008
+STARLINK-1075
+1 50075U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50075  53.0536 135.0000 0001420  83.8628 153.0000 15.06478060 10009
+STARLINK-1076
+1 50076U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50076  53.0536 135.0000 0001420  82.5398 198.0000 15.06255240 10002
+STARLINK-1077
+1 50077U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50077  53.0536 135.0000 0001420  79.6110 243.0000 15.06128402 10002
+STARLINK-1078
+1 50078U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50078  53.0536 135.0000 0001420  83.2471 288.0000 15.06215234 10003
+STARLINK-1079
+1 50079U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50079  53.0536 135.0000 0001420  79.5662 333.0000 15.06172046 10008
+STARLINK-1080
+1 50080U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50080  53.0536 150.0000 0001420  83.6750  20.0000 15.06108397 10002
+STARLINK-1081
+1 50081U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50081  53.0536 150.0000 0001420  86.4182  65.0000 15.06171577 10002
+STARLINK-1082
+1 50082U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50082  53.0536 150.0000 0001420  78.0726 110.0000 15.06423854 10003
+STARLINK-1083
+1 50083U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50083  53.0536 150.0000 0001420  84.0538 155.0000 15.06175202 10002
+STARLINK-1084
+1 50084U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50084  53.0536 150.0000 0001420  78.6871 200.0000 15.06165695 10008
+STARLINK-1085
+1 50085U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50085  53.0536 150.0000 0001420  83.0744 245.0000 15.06454206 10006
+STARLINK-1086
+1 50086U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50086  53.0536 150.0000 0001420  85.2102 290.0000 15.06269068 10009
+STARLINK-1087
+1 50087U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50087  53.0536 150.0000 0001420  79.2681 335.0000 15.06402999 10007
+STARLINK-1088
+1 50088U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50088  53.0536 165.0000 0001420  81.6745  22.0000 15.06118772 10008
+STARLINK-1089
+1 50089U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50089  53.0536 165.0000 0001420  82.0342  67.0000 15.06249431 10003
+STARLINK-1090
+1 50090U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50090  53.0536 165.0000 0001420  84.0976 112.0000 15.06371630 10008
+STARLINK-1091
+1 50091U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50091  53.0536 165.0000 0001420  78.3482 157.0000 15.06473666 10008
+STARLINK-1092
+1 50092U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50092  53.0536 165.0000 0001420  80.7570 202.0000 15.06241049 10003
+STARLINK-1093
+1 50093U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50093  53.0536 165.0000 0001420  79.8506 247.0000 15.06424669 10002
+STARLINK-1094
+1 50094U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50094  53.0536 165.0000 0001420  81.8501 292.0000 15.06156084 10004
+STARLINK-1095
+1 50095U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50095  53.0536 165.0000 0001420  80.1495 337.0000 15.06248753 10004
+STARLINK-1096
+1 50096U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50096  53.0536 180.0000 0001420  86.5967  24.0000 15.06179923 10001
+STARLINK-1097
+1 50097U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50097  53.0536 180.0000 0001420  85.9775  69.0000 15.06257252 10003
+STARLINK-1098
+1 50098U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50098  53.0536 180.0000 0001420  77.8699 114.0000 15.06300130 10004
+STARLINK-1099
+1 50099U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50099  53.0536 180.0000 0001420  85.7243 159.0000 15.06479713 10001
+STARLINK-1100
+1 50100U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50100  53.0536 180.0000 0001420  86.6277 204.0000 15.06467599 10001
+STARLINK-1101
+1 50101U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50101  53.0536 180.0000 0001420  79.0271 249.0000 15.06419478 10004
+STARLINK-1102
+1 50102U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50102  53.0536 180.0000 0001420  79.5015 294.0000 15.06274256 10009
+STARLINK-1103
+1 50103U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50103  53.0536 180.0000 0001420  77.9504 339.0000 15.06240416 10006
+STARLINK-1104
+1 50104U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50104  53.0536 195.0000 0001420  87.2171  26.0000 15.06231589 10001
+STARLINK-1105
+1 50105U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50105  53.0536 195.0000 0001420  85.2047  71.0000 15.06186081 10008
+STARLINK-1106
+1 50106U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50106  53.0536 195.0000 0001420  81.5941 116.0000 15.06262003 10000
+STARLINK-1107
+1 50107U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50107  53.0536 195.0000 0001420  87.3182 161.0000 15.06462927 10009
+STARLINK-1108
+1 50108U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50108  53.0536 195.0000 0001420  84.5481 206.0000 15.06302307 10006
+STARLINK-1109
+1 50109U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50109  53.0536 195.0000 0001420  80.3311 251.0000 15.06141919 10003
+STARLINK-1110
+1 50110U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50110  53.0536 195.0000 0001420  83.1558 296.0000 15.06467484 10006
+STARLINK-1111
+1 50111U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50111  53.0536 195.0000 0001420  84.8438 341.0000 15.06296878 10000
+STARLINK-1112
+1 50112U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50112  53.0536 210.0000 0001420  83.2058  28.0000 15.06102866 10005
+STARLINK-1113
+1 50113U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50113  53.0536 210.0000 0001420  85.8912  73.0000 15.06281140 10006
+STARLINK-1114
+1 50114U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50114  53.0536 210.0000 0001420  86.9718 118.0000 15.06142973 10003
+STARLINK-1115
+1 50115U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50115  53.0536 210.0000 0001420  79.2222 163.0000 15.06112045 10006
+STARLINK-1116
+1 50116U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50116  53.0536 210.0000 0001420  84.1161 208.0000 15.06318014 10008
+STARLINK-1117
+1 50117U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50117  53.0536 210.0000 0001420  78.5629 253.0000 15.06174082 10000
+STARLINK-1118
+1 50118U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50118  53.0536 210.0000 0001420  79.8262 298.0000 15.06436115 10005
+STARLINK-1119
+1 50119U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50119  53.0536 210.0000 0001420  83.5578 343.0000 15.06317808 10006
+STARLINK-1120
+1 50120U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50120  53.0536 225.0000 0001420  83.2007  30.0000 15.06247690 10002
+STARLINK-1121
+1 50121U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50121  53.0536 225.0000 0001420  86.7111  75.0000 15.06289113 10002
+STARLINK-1122
+1 50122U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50122  53.0536 225.0000 0001420  84.5259 120.0000 15.06161704 10008
+STARLINK-1123
+1 50123U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50123  53.0536 225.0000 0001420  81.3219 165.0000 15.06175474 10008
+STARLINK-1124
+1 50124U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50124  53.0536 225.0000 0001420  80.3640 210.0000 15.06348676 10003
+STARLINK-1125
+1 50125U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50125  53.0536 225.0000 0001420  84.8826 255.0000 15.06206471 10004
+STARLINK-1126
+1 50126U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50126  53.0536 225.0000 0001420  81.9469 300.0000 15.06109017 10005
+STARLINK-1127
+1 50127U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50127  53.0536 225.0000 0001420  87.3250 345.0000 15.06479382 10008
+STARLINK-1128
+1 50128U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50128  53.0536 240.0000 0001420  79.4955  32.0000 15.06109304 10007
+STARLINK-1129
+1 50129U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50129  53.0536 240.0000 0001420  86.6966  77.0000 15.06186080 10005
+STARLINK-1130
+1 50130U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50130  53.0536 240.0000 0001420  86.1567 122.0000 15.06432346 10009
+STARLINK-1131
+1 50131U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50131  53.0536 240.0000 0001420  78.9415 167.0000 15.06227811 10009
+STARLINK-1132
+1 50132U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50132  53.0536 240.0000 0001420  84.3994 212.0000 15.06413498 10002
+STARLINK-1133
+1 50133U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50133  53.0536 240.0000 0001420  87.2363 257.0000 15.06324671 10008
+STARLINK-1134
+1 50134U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50134  53.0536 240.0000 0001420  77.4422 302.0000 15.06341591 10007
+STARLINK-1135
+1 50135U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50135  53.0536 240.0000 0001420  80.3578 347.0000 15.06406842 10003
+STARLINK-1136
+1 50136U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50136  53.0536 255.0000 0001420  86.7533  34.0000 15.06345355 10005
+STARLINK-1137
+1 50137U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50137  53.0536 255.0000 0001420  78.5183  79.0000 15.06133716 10001
+STARLINK-1138
+1 50138U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50138  53.0536 255.0000 0001420  82.8962 124.0000 15.06122814 10003
+STARLINK-1139
+1 50139U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50139  53.0536 255.0000 0001420  83.4123 169.0000 15.06188939 10009
+STARLINK-1140
+1 50140U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50140  53.0536 255.0000 0001420  79.4000 214.0000 15.06367045 10008
+STARLINK-1141
+1 50141U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50141  53.0536 255.0000 0001420  80.0038 259.0000 15.06333695 10001
+STARLINK-1142
+1 50142U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50142  53.0536 255.0000 0001420  86.4174 304.0000 15.06275413 10007
+STARLINK-1143
+1 50143U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50143  53.0536 255.0000 0001420  78.2870 349.0000 15.06418441 10009
+STARLINK-1144
+1 50144U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50144  53.0536 270.0000 0001420  80.1308  36.0000 15.06249430 10008
+STARLINK-1145
+1 50145U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50145  53.0536 270.0000 0001420  85.0752  81.0000 15.06081418 10006
+STARLINK-1146
+1 50146U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50146  53.0536 270.0000 0001420  79.9836 126.0000 15.06334845 10007
+STARLINK-1147
+1 50147U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50147  53.0536 270.0000 0001420  82.8808 171.0000 15.06376492 10004
+STARLINK-1148
+1 50148U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50148  53.0536 270.0000 0001420  77.4607 216.0000 15.06251075 10001
+STARLINK-1149
+1 50149U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50149  53.0536 270.0000 0001420  86.1951 261.0000 15.06110098 10000
+STARLINK-1150
+1 50150U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50150  53.0536 270.0000 0001420  82.8199 306.0000 15.06441571 10002
+STARLINK-1151
+1 50151U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50151  53.0536 270.0000 0001420  83.1891 351.0000 15.06413838 10001
+STARLINK-1152
+1 50152U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50152  53.0536 285.0000 0001420  78.6385  38.0000 15.06139238 10006
+STARLINK-1153
+1 50153U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50153  53.0536 285.0000 0001420  86.3538  83.0000 15.06203303 10008
+STARLINK-1154
+1 50154U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50154  53.0536 285.0000 0001420  85.9710 128.0000 15.06398449 10002
+STARLINK-1155
+1 50155U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50155  53.0536 285.0000 0001420  79.4648 173.0000 15.06439570 10002
+STARLINK-1156
+1 50156U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50156  53.0536 285.0000 0001420  78.3919 218.0000 15.06179812 10002
+STARLINK-1157
+1 50157U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50157  53.0536 285.0000 0001420  86.2053 263.0000 15.06392046 10006
+STARLINK-1158
+1 50158U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50158  53.0536 285.0000 0001420  83.5706 308.0000 15.06242551 10007
+STARLINK-1159
+1 50159U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50159  53.0536 285.0000 0001420  86.6628 353.0000 15.06141821 10003
+STARLINK-1160
+1 50160U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50160  53.0536 300.0000 0001420  87.1261  40.0000 15.06425842 10003
+STARLINK-1161
+1 50161U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50161  53.0536 300.0000 0001420  86.1782  85.0000 15.06404309 10005
+STARLINK-1162
+1 50162U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50162  53.0536 300.0000 0001420  84.7296 130.0000 15.06089915 10003
+STARLINK-1163
+1 50163U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50163  53.0536 300.0000 0001420  86.6722 175.0000 15.06212874 10000
+STARLINK-1164
+1 50164U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50164  53.0536 300.0000 0001420  86.0046 220.0000 15.06400894 10006
+STARLINK-1165
+1 50165U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50165  53.0536 300.0000 0001420  80.0321 265.0000 15.06404300 10002
+STARLINK-1166
+1 50166U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50166  53.0536 300.0000 0001420  78.4450 310.0000 15.06394950 10007
+STARLINK-1167
+1 50167U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50167  53.0536 300.0000 0001420  85.9499 355.0000 15.06428867 10008
+STARLINK-1168
+1 50168U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50168  53.0536 315.0000 0001420  85.5299  42.0000 15.06168973 10001
+STARLINK-1169
+1 50169U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50169  53.0536 315.0000 0001420  80.4159  87.0000 15.06264121 10002
+STARLINK-1170
+1 50170U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50170  53.0536 315.0000 0001420  79.6400 132.0000 15.06398138 10000
+STARLINK-1171
+1 50171U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50171  53.0536 315.0000 0001420  79.2953 177.0000 15.06089466 10000
+STARLINK-1172
+1 50172U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50172  53.0536 315.0000 0001420  86.0075 222.0000 15.06211305 10002
+STARLINK-1173
+1 50173U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50173  53.0536 315.0000 0001420  80.1552 267.0000 15.06466756 10009
+STARLINK-1174
+1 50174U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50174  53.0536 315.0000 0001420  81.3608 312.0000 15.06336593 10001
+STARLINK-1175
+1 50175U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50175  53.0536 315.0000 0001420  82.7262 357.0000 15.06472460 10006
+STARLINK-1176
+1 50176U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50176  53.0536 330.0000 0001420  78.5174  44.0000 15.06455695 10003
+STARLINK-1177
+1 50177U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50177  53.0536 330.0000 0001420  79.1497  89.0000 15.06468160 10009
+STARLINK-1178
+1 50178U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50178  53.0536 330.0000 0001420  80.0187 134.0000 15.06465014 10003
+STARLINK-1179
+1 50179U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50179  53.0536 330.0000 0001420  81.7096 179.0000 15.06123361 10006
+STARLINK-1180
+1 50180U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9990
+2 50180  53.0536 330.0000 0001420  80.5008 224.0000 15.06371418 10007
+STARLINK-1181
+1 50181U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50181  53.0536 330.0000 0001420  82.4782 269.0000 15.06322484 10006
+STARLINK-1182
+1 50182U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50182  53.0536 330.0000 0001420  83.1299 314.0000 15.06234078 10000
+STARLINK-1183
+1 50183U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50183  53.0536 330.0000 0001420  84.4519 359.0000 15.06181889 10000
+STARLINK-1184
+1 50184U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9994
+2 50184  53.0536 345.0000 0001420  86.6198  46.0000 15.06080677 10000
+STARLINK-1185
+1 50185U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50185  53.0536 345.0000 0001420  84.5583  91.0000 15.06295381 10006
+STARLINK-1186
+1 50186U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9996
+2 50186  53.0536 345.0000 0001420  84.0703 136.0000 15.06376780 10009
+STARLINK-1187
+1 50187U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50187  53.0536 345.0000 0001420  78.0637 181.0000 15.06225689 10000
+STARLINK-1188
+1 50188U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9998
+2 50188  53.0536 345.0000 0001420  80.6660 226.0000 15.06345695 10006
+STARLINK-1189
+1 50189U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50189  53.0536 345.0000 0001420  85.8442 271.0000 15.06205566 10004
+STARLINK-1190
+1 50190U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50190  53.0536 345.0000 0001420  80.3672 316.0000 15.06367902 10004
+STARLINK-1191
+1 50191U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50191  53.0536 345.0000 0001420  81.4479   1.0000 15.06203714 10003
+STARLINK-1192
+1 50192U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50192  53.2000   0.0000 0001000  85.9131   0.0000 15.06960960 10000
+STARLINK-1193
+1 50193U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50193  53.2000   0.0000 0001000  88.4089  60.0000 15.06850915 10005
+STARLINK-1194
+1 50194U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50194  53.2000   0.0000 0001000  93.5464 120.0000 15.07176145 10004
+STARLINK-1195
+1 50195U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50195  53.2000   0.0000 0001000  92.3103 180.0000 15.07161122 10007
+STARLINK-1196
+1 50196U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50196  53.2000   0.0000 0001000  90.9587 240.0000 15.06920380 10003
+STARLINK-1197
+1 50197U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50197  53.2000   0.0000 0001000  85.7383 300.0000 15.06800162 10002
+STARLINK-1198
+1 50198U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50198  53.2000  18.0000 0001000  91.5997   0.0000 15.06971955 10004
+STARLINK-1199
+1 50199U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50199  53.2000  18.0000 0001000  89.2998  60.0000 15.07061882 10006
+STARLINK-1200
+1 50200U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50200  53.2000  18.0000 0001000  84.2740 120.0000 15.06976864 10000
+STARLINK-1201
+1 50201U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50201  53.2000  18.0000 0001000  98.0236 180.0000 15.06989274 10009
+STARLINK-1202
+1 50202U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50202  53.2000  18.0000 0001000  83.3938 240.0000 15.07118410 10000
+STARLINK-1203
+1 50203U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50203  53.2000  18.0000 0001000  90.3090 300.0000 15.06833918 10001
+STARLINK-1204
+1 50204U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50204  53.2000  36.0000 0001000  86.7038   0.0000 15.07053176 10001
+STARLINK-1205
+1 50205U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50205  53.2000  36.0000 0001000  95.0228  60.0000 15.07127369 10008
+STARLINK-1206
+1 50206U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50206  53.2000  36.0000 0001000  84.4928 120.0000 15.07069118 10002
+STARLINK-1207
+1 50207U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50207  53.2000  36.0000 0001000  80.4885 180.0000 15.06879652 10008
+STARLINK-1208
+1 50208U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50208  53.2000  36.0000 0001000  89.5027 240.0000 15.06897937 10000
+STARLINK-1209
+1 50209U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50209  53.2000  36.0000 0001000  81.4566 300.0000 15.07139895 10000
+STARLINK-1210
+1 50210U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50210  53.2000  54.0000 0001000  92.5953   0.0000 15.06965776 10006
+STARLINK-1211
+1 50211U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50211  53.2000  54.0000 0001000  93.9271  60.0000 15.06877774 10001
+STARLINK-1212
+1 50212U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50212  53.2000  54.0000 0001000  84.8797 120.0000 15.06997751 10009
+STARLINK-1213
+1 50213U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50213  53.2000  54.0000 0001000  80.1109 180.0000 15.07062423 10002
+STARLINK-1214
+1 50214U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50214  53.2000  54.0000 0001000  95.4009 240.0000 15.07100386 10009
+STARLINK-1215
+1 50215U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50215  53.2000  54.0000 0001000  88.5029 300.0000 15.06842635 10001
+STARLINK-1216
+1 50216U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50216  53.2000  72.0000 0001000  99.1593   0.0000 15.06870355 10003
+STARLINK-1217
+1 50217U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50217  53.2000  72.0000 0001000  81.0044  60.0000 15.07007183 10003
+STARLINK-1218
+1 50218U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50218  53.2000  72.0000 0001000  96.9667 120.0000 15.06899679 10005
+STARLINK-1219
+1 50219U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50219  53.2000  72.0000 0001000  96.0283 180.0000 15.06982585 10006
+STARLINK-1220
+1 50220U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50220  53.2000  72.0000 0001000  99.7578 240.0000 15.07067031 10003
+STARLINK-1221
+1 50221U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50221  53.2000  72.0000 0001000  99.0008 300.0000 15.07038181 10006
+STARLINK-1222
+1 50222U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50222  53.2000  90.0000 0001000  92.2530   0.0000 15.07156570 10002
+STARLINK-1223
+1 50223U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50223  53.2000  90.0000 0001000  90.0956  60.0000 15.07087710 10006
+STARLINK-1224
+1 50224U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50224  53.2000  90.0000 0001000  90.9574 120.0000 15.07132228 10004
+STARLINK-1225
+1 50225U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50225  53.2000  90.0000 0001000  94.8731 180.0000 15.07158883 10004
+STARLINK-1226
+1 50226U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50226  53.2000  90.0000 0001000  85.1838 240.0000 15.06989870 10000
+STARLINK-1227
+1 50227U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50227  53.2000  90.0000 0001000  92.7532 300.0000 15.06898896 10000
+STARLINK-1228
+1 50228U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50228  53.2000 108.0000 0001000  90.4260   0.0000 15.07106325 10001
+STARLINK-1229
+1 50229U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50229  53.2000 108.0000 0001000  85.4919  60.0000 15.07050699 10005
+STARLINK-1230
+1 50230U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50230  53.2000 108.0000 0001000  85.7146 120.0000 15.06830993 10001
+STARLINK-1231
+1 50231U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50231  53.2000 108.0000 0001000  86.3942 180.0000 15.06908686 10004
+STARLINK-1232
+1 50232U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50232  53.2000 108.0000 0001000  82.7675 240.0000 15.07016061 10003
+STARLINK-1233
+1 50233U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50233  53.2000 108.0000 0001000  93.8790 300.0000 15.06892505 10006
+STARLINK-1234
+1 50234U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50234  53.2000 126.0000 0001000  81.2846   0.0000 15.07082568 10008
+STARLINK-1235
+1 50235U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50235  53.2000 126.0000 0001000  90.8522  60.0000 15.06963040 10004
+STARLINK-1236
+1 50236U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50236  53.2000 126.0000 0001000  84.1367 120.0000 15.06966310 10008
+STARLINK-1237
+1 50237U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50237  53.2000 126.0000 0001000  98.0968 180.0000 15.06968057 10006
+STARLINK-1238
+1 50238U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50238  53.2000 126.0000 0001000  93.9105 240.0000 15.07033632 10004
+STARLINK-1239
+1 50239U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50239  53.2000 126.0000 0001000  95.3119 300.0000 15.07142693 10001
+STARLINK-1240
+1 50240U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50240  53.2000 144.0000 0001000  80.1179   0.0000 15.06952152 10006
+STARLINK-1241
+1 50241U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50241  53.2000 144.0000 0001000  95.0695  60.0000 15.06940704 10001
+STARLINK-1242
+1 50242U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50242  53.2000 144.0000 0001000  99.0686 120.0000 15.07141379 10005
+STARLINK-1243
+1 50243U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50243  53.2000 144.0000 0001000  94.9503 180.0000 15.06967609 10005
+STARLINK-1244
+1 50244U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50244  53.2000 144.0000 0001000  92.0651 240.0000 15.07018453 10001
+STARLINK-1245
+1 50245U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50245  53.2000 144.0000 0001000  84.3884 300.0000 15.06888215 10001
+STARLINK-1246
+1 50246U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50246  53.2000 162.0000 0001000  80.5805   0.0000 15.06974334 10008
+STARLINK-1247
+1 50247U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50247  53.2000 162.0000 0001000  93.5828  60.0000 15.06934452 10001
+STARLINK-1248
+1 50248U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50248  53.2000 162.0000 0001000  83.3009 120.0000 15.06961727 10002
+STARLINK-1249
+1 50249U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50249  53.2000 162.0000 0001000  82.5526 180.0000 15.06986956 10005
+STARLINK-1250
+1 50250U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50250  53.2000 162.0000 0001000  80.5393 240.0000 15.07048903 10006
+STARLINK-1251
+1 50251U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50251  53.2000 162.0000 0001000  91.2878 300.0000 15.06957608 10001
+STARLINK-1252
+1 50252U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50252  53.2000 180.0000 0001000  92.8550   0.0000 15.06810841 10000
+STARLINK-1253
+1 50253U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50253  53.2000 180.0000 0001000  89.2340  60.0000 15.06854280 10009
+STARLINK-1254
+1 50254U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50254  53.2000 180.0000 0001000  87.5821 120.0000 15.06820114 10001
+STARLINK-1255
+1 50255U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50255  53.2000 180.0000 0001000  86.5369 180.0000 15.06884664 10004
+STARLINK-1256
+1 50256U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50256  53.2000 180.0000 0001000  87.5825 240.0000 15.07104492 10005
+STARLINK-1257
+1 50257U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50257  53.2000 180.0000 0001000  96.6385 300.0000 15.07100804 10008
+STARLINK-1258
+1 50258U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50258  53.2000 198.0000 0001000  81.6381   0.0000 15.06900909 10008
+STARLINK-1259
+1 50259U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50259  53.2000 198.0000 0001000  90.7884  60.0000 15.06807753 10007
+STARLINK-1260
+1 50260U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50260  53.2000 198.0000 0001000  86.9992 120.0000 15.07199963 10001
+STARLINK-1261
+1 50261U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50261  53.2000 198.0000 0001000  95.6247 180.0000 15.07060058 10000
+STARLINK-1262
+1 50262U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50262  53.2000 198.0000 0001000  95.0847 240.0000 15.07060702 10004
+STARLINK-1263
+1 50263U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50263  53.2000 198.0000 0001000  83.9872 300.0000 15.07179845 10005
+STARLINK-1264
+1 50264U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50264  53.2000 216.0000 0001000  83.0476   0.0000 15.06808152 10004
+STARLINK-1265
+1 50265U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50265  53.2000 216.0000 0001000  93.3892  60.0000 15.06850488 10006
+STARLINK-1266
+1 50266U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50266  53.2000 216.0000 0001000  84.3593 120.0000 15.07025588 10008
+STARLINK-1267
+1 50267U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50267  53.2000 216.0000 0001000  95.3380 180.0000 15.07079786 10000
+STARLINK-1268
+1 50268U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50268  53.2000 216.0000 0001000  92.1449 240.0000 15.06867116 10000
+STARLINK-1269
+1 50269U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50269  53.2000 216.0000 0001000  82.2907 300.0000 15.07099170 10005
+STARLINK-1270
+1 50270U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50270  53.2000 234.0000 0001000  99.2944   0.0000 15.07127720 10006
+STARLINK-1271
+1 50271U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50271  53.2000 234.0000 0001000  80.5136  60.0000 15.06843239 10008
+STARLINK-1272
+1 50272U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50272  53.2000 234.0000 0001000  93.5469 120.0000 15.06924783 10003
+STARLINK-1273
+1 50273U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50273  53.2000 234.0000 0001000  87.9331 180.0000 15.07183269 10002
+STARLINK-1274
+1 50274U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50274  53.2000 234.0000 0001000  81.5199 240.0000 15.07086006 10003
+STARLINK-1275
+1 50275U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50275  53.2000 234.0000 0001000  92.5448 300.0000 15.07076246 10005
+STARLINK-1276
+1 50276U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50276  53.2000 252.0000 0001000  95.4496   0.0000 15.06840761 10008
+STARLINK-1277
+1 50277U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50277  53.2000 252.0000 0001000  92.0082  60.0000 15.07140117 10008
+STARLINK-1278
+1 50278U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50278  53.2000 252.0000 0001000  99.6769 120.0000 15.06848422 10004
+STARLINK-1279
+1 50279U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50279  53.2000 252.0000 0001000  86.9441 180.0000 15.07113054 10004
+STARLINK-1280
+1 50280U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50280  53.2000 252.0000 0001000  87.4114 240.0000 15.06971351 10007
+STARLINK-1281
+1 50281U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50281  53.2000 252.0000 0001000  86.8246 300.0000 15.07002384 10006
+STARLINK-1282
+1 50282U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50282  53.2000 270.0000 0001000  96.4466   0.0000 15.07139830 10002
+STARLINK-1283
+1 50283U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50283  53.2000 270.0000 0001000  99.2158  60.0000 15.06842216 10006
+STARLINK-1284
+1 50284U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50284  53.2000 270.0000 0001000  96.5741 120.0000 15.07054234 10008
+STARLINK-1285
+1 50285U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50285  53.2000 270.0000 0001000  88.7097 180.0000 15.07082923 10008
+STARLINK-1286
+1 50286U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50286  53.2000 270.0000 0001000  99.3095 240.0000 15.07093518 10004
+STARLINK-1287
+1 50287U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50287  53.2000 270.0000 0001000  96.1640 300.0000 15.06908033 10009
+STARLINK-1288
+1 50288U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50288  53.2000 288.0000 0001000  89.6700   0.0000 15.07015269 10001
+STARLINK-1289
+1 50289U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50289  53.2000 288.0000 0001000  94.6205  60.0000 15.06974230 10005
+STARLINK-1290
+1 50290U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50290  53.2000 288.0000 0001000  97.0343 120.0000 15.06907358 10001
+STARLINK-1291
+1 50291U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50291  53.2000 288.0000 0001000  81.7333 180.0000 15.07132292 10005
+STARLINK-1292
+1 50292U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50292  53.2000 288.0000 0001000  84.8773 240.0000 15.07152652 10007
+STARLINK-1293
+1 50293U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50293  53.2000 288.0000 0001000  92.2066 300.0000 15.06985883 10002
+STARLINK-1294
+1 50294U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50294  53.2000 306.0000 0001000  80.5740   0.0000 15.06951596 10004
+STARLINK-1295
+1 50295U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50295  53.2000 306.0000 0001000  83.6368  60.0000 15.07140381 10004
+STARLINK-1296
+1 50296U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50296  53.2000 306.0000 0001000  95.9566 120.0000 15.06884848 10000
+STARLINK-1297
+1 50297U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50297  53.2000 306.0000 0001000  97.6064 180.0000 15.06936136 10007
+STARLINK-1298
+1 50298U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50298  53.2000 306.0000 0001000  85.5254 240.0000 15.07080474 10008
+STARLINK-1299
+1 50299U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50299  53.2000 306.0000 0001000  98.9613 300.0000 15.06804060 10007
+STARLINK-1300
+1 50300U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9991
+2 50300  53.2000 324.0000 0001000  94.4015   0.0000 15.06834245 10002
+STARLINK-1301
+1 50301U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50301  53.2000 324.0000 0001000  95.1633  60.0000 15.06995431 10008
+STARLINK-1302
+1 50302U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50302  53.2000 324.0000 0001000  92.9181 120.0000 15.07076244 10002
+STARLINK-1303
+1 50303U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9994
+2 50303  53.2000 324.0000 0001000  95.8587 180.0000 15.06996329 10005
+STARLINK-1304
+1 50304U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9995
+2 50304  53.2000 324.0000 0001000  84.4319 240.0000 15.06837221 10005
+STARLINK-1305
+1 50305U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50305  53.2000 324.0000 0001000  86.1241 300.0000 15.07076715 10000
+STARLINK-1306
+1 50306U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50306  53.2000 342.0000 0001000  89.4652   0.0000 15.07032622 10009
+STARLINK-1307
+1 50307U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9998
+2 50307  53.2000 342.0000 0001000  88.5101  60.0000 15.07012369 10001
+STARLINK-1308
+1 50308U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9999
+2 50308  53.2000 342.0000 0001000  86.6158 120.0000 15.07098374 10000
+STARLINK-1309
+1 50309U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9990
+2 50309  53.2000 342.0000 0001000  85.4183 180.0000 15.07081142 10007
+STARLINK-1310
+1 50310U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50310  53.2000 342.0000 0001000  82.4131 240.0000 15.06900561 10000
+STARLINK-1311
+1 50311U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50311  53.2000 342.0000 0001000  82.3911 300.0000 15.06877034 10001
+ONEWEB-312
+1 50312U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50312  87.9000   0.0000 0011999 110.4876   0.0000 12.87207173 10002
+ONEWEB-313
+1 50313U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50313  87.9000   0.0000 0011999  88.6554  60.0000 12.87137030 10002
+ONEWEB-314
+1 50314U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50314  87.9000   0.0000 0011999 108.9834 120.0000 12.87196840 10001
+ONEWEB-315
+1 50315U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50315  87.9000   0.0000 0011999 100.9855 180.0000 12.87295321 10007
+ONEWEB-316
+1 50316U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50316  87.9000   0.0000 0011999  84.0210 240.0000 12.87156600 10008
+ONEWEB-317
+1 50317U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50317  87.9000   0.0000 0011999  89.0993 300.0000 12.87138824 10007
+ONEWEB-318
+1 50318U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50318  87.9000  30.0000 0011999  80.5659   3.0000 12.87135888 10003
+ONEWEB-319
+1 50319U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50319  87.9000  30.0000 0011999  90.9725  63.0000 12.87206827 10001
+ONEWEB-320
+1 50320U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50320  87.9000  30.0000 0011999 102.1344 123.0000 12.87294859 10005
+ONEWEB-321
+1 50321U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50321  87.9000  30.0000 0011999  85.0512 183.0000 12.87239483 10000
+ONEWEB-322
+1 50322U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50322  87.9000  30.0000 0011999  99.6351 243.0000 12.87273692 10000
+ONEWEB-323
+1 50323U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50323  87.9000  30.0000 0011999 102.9626 303.0000 12.87274544 10008
+ONEWEB-324
+1 50324U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50324  87.9000  60.0000 0011999  97.6188   6.0000 12.87193879 10006
+ONEWEB-325
+1 50325U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50325  87.9000  60.0000 0011999  82.0551  66.0000 12.87136873 10006
+ONEWEB-326
+1 50326U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50326  87.9000  60.0000 0011999  99.1092 126.0000 12.87288213 10009
+ONEWEB-327
+1 50327U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50327  87.9000  60.0000 0011999  96.0283 186.0000 12.87264423 10001
+ONEWEB-328
+1 50328U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50328  87.9000  60.0000 0011999 105.1778 246.0000 12.87114816 10000
+ONEWEB-329
+1 50329U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50329  87.9000  60.0000 0011999  85.9679 306.0000 12.87110722 10005
+ONEWEB-330
+1 50330U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50330  87.9000  90.0000 0011999  92.1534   9.0000 12.87212568 10001
+ONEWEB-331
+1 50331U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50331  87.9000  90.0000 0011999  84.7381  69.0000 12.87298784 10009
+ONEWEB-332
+1 50332U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50332  87.9000  90.0000 0011999 104.2527 129.0000 12.87252889 10003
+ONEWEB-333
+1 50333U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50333  87.9000  90.0000 0011999  89.0275 189.0000 12.87258148 10004
+ONEWEB-334
+1 50334U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50334  87.9000  90.0000 0011999  98.0206 249.0000 12.87204515 10005
+ONEWEB-335
+1 50335U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50335  87.9000  90.0000 0011999 114.4067 309.0000 12.87188544 10004
+ONEWEB-336
+1 50336U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50336  87.9000 120.0000 0011999  92.2152  12.0000 12.87298006 10003
+ONEWEB-337
+1 50337U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50337  87.9000 120.0000 0011999 104.3852  72.0000 12.87224205 10002
+ONEWEB-338
+1 50338U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50338  87.9000 120.0000 0011999 117.9036 132.0000 12.87248018 10002
+ONEWEB-339
+1 50339U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50339  87.9000 120.0000 0011999  88.4410 192.0000 12.87141558 10008
+ONEWEB-340
+1 50340U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50340  87.9000 120.0000 0011999  86.2823 252.0000 12.87232086 10008
+ONEWEB-341
+1 50341U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50341  87.9000 120.0000 0011999  83.0026 312.0000 12.87134763 10009
+ONEWEB-342
+1 50342U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50342  87.9000 150.0000 0011999  98.0201  15.0000 12.87100535 10004
+ONEWEB-343
+1 50343U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50343  87.9000 150.0000 0011999  91.6504  75.0000 12.87218762 10008
+ONEWEB-344
+1 50344U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50344  87.9000 150.0000 0011999 108.2782 135.0000 12.87146295 10000
+ONEWEB-345
+1 50345U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50345  87.9000 150.0000 0011999  98.1613 195.0000 12.87240598 10008
+ONEWEB-346
+1 50346U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50346  87.9000 150.0000 0011999 116.9564 255.0000 12.87237477 10002
+ONEWEB-347
+1 50347U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50347  87.9000 150.0000 0011999 105.0023 315.0000 12.87257566 10000
+ONEWEB-348
+1 50348U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50348  87.9000 180.0000 0011999 117.3467  18.0000 12.87232237 10000
+ONEWEB-349
+1 50349U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50349  87.9000 180.0000 0011999 101.7825  78.0000 12.87185028 10007
+ONEWEB-350
+1 50350U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50350  87.9000 180.0000 0011999 116.3365 138.0000 12.87229527 10000
+ONEWEB-351
+1 50351U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50351  87.9000 180.0000 0011999  82.8564 198.0000 12.87265326 10002
+ONEWEB-352
+1 50352U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50352  87.9000 180.0000 0011999  92.3045 258.0000 12.87133185 10007
+ONEWEB-353
+1 50353U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50353  87.9000 180.0000 0011999 102.7683 318.0000 12.87249792 10001
+ONEWEB-354
+1 50354U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50354  87.9000 210.0000 0011999  84.9741  21.0000 12.87157722 10004
+ONEWEB-355
+1 50355U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50355  87.9000 210.0000 0011999 107.9893  81.0000 12.87237736 10009
+ONEWEB-356
+1 50356U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50356  87.9000 210.0000 0011999 100.0189 141.0000 12.87288535 10002
+ONEWEB-357
+1 50357U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50357  87.9000 210.0000 0011999  83.2177 201.0000 12.87198759 10007
+ONEWEB-358
+1 50358U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50358  87.9000 210.0000 0011999  97.2811 261.0000 12.87107972 10001
+ONEWEB-359
+1 50359U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50359  87.9000 210.0000 0011999  90.0147 321.0000 12.87164464 10001
+ONEWEB-360
+1 50360U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50360  87.9000 240.0000 0011999 118.4764  24.0000 12.87118265 10004
+ONEWEB-361
+1 50361U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50361  87.9000 240.0000 0011999 103.0080  84.0000 12.87267192 10006
+ONEWEB-362
+1 50362U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50362  87.9000 240.0000 0011999 119.9829 144.0000 12.87290157 10008
+ONEWEB-363
+1 50363U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50363  87.9000 240.0000 0011999  90.7804 204.0000 12.87234456 10005
+ONEWEB-364
+1 50364U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50364  87.9000 240.0000 0011999 110.2508 264.0000 12.87108046 10006
+ONEWEB-365
+1 50365U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50365  87.9000 240.0000 0011999 106.0604 324.0000 12.87194100 10000
+ONEWEB-366
+1 50366U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50366  87.9000 270.0000 0011999  87.2596  27.0000 12.87283215 10000
+ONEWEB-367
+1 50367U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50367  87.9000 270.0000 0011999 105.3914  87.0000 12.87217066 10004
+ONEWEB-368
+1 50368U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50368  87.9000 270.0000 0011999  83.6497 147.0000 12.87198345 10004
+ONEWEB-369
+1 50369U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50369  87.9000 270.0000 0011999  93.3323 207.0000 12.87169592 10000
+ONEWEB-370
+1 50370U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9998
+2 50370  87.9000 270.0000 0011999 114.3093 267.0000 12.87234027 10002
+ONEWEB-371
+1 50371U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50371  87.9000 270.0000 0011999 107.7469 327.0000 12.87165961 10003
+ONEWEB-372
+1 50372U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50372  87.9000 300.0000 0011999 117.8077  30.0000 12.87157644 10005
+ONEWEB-373
+1 50373U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50373  87.9000 300.0000 0011999 102.0039  90.0000 12.87262713 10000
+ONEWEB-374
+1 50374U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50374  87.9000 300.0000 0011999  92.5807 150.0000 12.87190965 10003
+ONEWEB-375
+1 50375U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50375  87.9000 300.0000 0011999 118.8074 210.0000 12.87164655 10006
+ONEWEB-376
+1 50376U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9994
+2 50376  87.9000 300.0000 0011999 100.5839 270.0000 12.87180835 10008
+ONEWEB-377
+1 50377U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9995
+2 50377  87.9000 300.0000 0011999 106.3064 330.0000 12.87297624 10005
+ONEWEB-378
+1 50378U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9996
+2 50378  87.9000 330.0000 0011999  96.5299  33.0000 12.87208519 10004
+ONEWEB-379
+1 50379U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50379  87.9000 330.0000 0011999  94.4712  93.0000 12.87137517 10007
+ONEWEB-380
+1 50380U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9999
+2 50380  87.9000 330.0000 0011999 105.0163 153.0000 12.87251289 10008
+ONEWEB-381
+1 50381U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50381  87.9000 330.0000 0011999  88.1423 213.0000 12.87251998 10003
+ONEWEB-382
+1 50382U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50382  87.9000 330.0000 0011999 117.1069 273.0000 12.87209844 10002
+ONEWEB-383
+1 50383U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9992
+2 50383  87.9000 330.0000 0011999 107.9300 333.0000 12.87187623 10005
+GPS BIII-1
+1 50384U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9998
+2 50384  54.2429   0.0000 0069194 219.1938  86.1471  2.00551168 10006
+GPS BIII-2
+1 50385U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9999
+2 50385  55.1017  36.0000 0056567  33.5553 357.2126  2.00566259 10006
+GPS BIII-3
+1 50386U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9990
+2 50386  54.9229  72.0000 0043523 299.5715 179.4152  2.00562332 10002
+GPS BIII-4
+1 50387U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9991
+2 50387  55.0177 108.0000 0048202 300.5006 352.8881  2.00552875 10009
+GPS BIII-5
+1 50388U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9992
+2 50388  55.1025 144.0000 0051507 331.8725 182.9667  2.00565587 10008
+GPS BIII-6
+1 50389U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9993
+2 50389  55.7281 180.0000 0048287 284.4022 149.3793  2.00566685 10000
+GPS BIII-7
+1 50390U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9995
+2 50390  55.0155 216.0000 0064616 101.8220 107.4801  2.00559739 10008
+GPS BIII-8
+1 50391U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9996
+2 50391  55.9978 252.0000 0054689  53.4944 193.8890  2.00554902 10009
+GPS BIII-9
+1 50392U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9997
+2 50392  55.1038 288.0000 0056302 163.9241 115.8398  2.00551773 10009
+GPS BIII-10
+1 50393U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9998
+2 50393  55.3950 324.0000 0057153  84.0825 279.1960  2.00548873 10008
+GLONASS-M 701
+1 50394U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9999
+2 50394  64.8000   0.0000 0010000 268.0939 253.8820  2.13132456 10005
+GLONASS-M 702
+1 50395U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9990
+2 50395  64.8000  45.0000 0010000 138.9884 238.9280  2.13132830 10009
+GLONASS-M 703
+1 50396U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9991
+2 50396  64.8000  90.0000 0010000 353.0945 178.3183  2.13101481 10005
+GLONASS-M 704
+1 50397U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9992
+2 50397  64.8000 135.0000 0010000 180.8248 212.4650  2.13134788 10003
+GLONASS-M 705
+1 50398U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9993
+2 50398  64.8000 180.0000 0010000 314.7085 158.5102  2.13121038 10007
+GLONASS-M 706
+1 50399U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9994
+2 50399  64.8000 225.0000 0010000 164.4941 260.0798  2.13116399 10003
+GLONASS-M 707
+1 50400U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9997
+2 50400  64.8000 270.0000 0010000 235.7213  55.5700  2.13118780 10006
+GLONASS-M 708
+1 50401U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9998
+2 50401  64.8000 315.0000 0010000 348.9133 121.8820  2.13127708 10005
+ASTRA 1N
+1 50402U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9999
+2 50402   0.0525   0.0000 0001000   8.5177 306.8429  1.00273593 10007
+SES-17
+1 50403U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9990
+2 50403   0.0390  36.0000 0001000   3.1666 258.7383  1.00272594 10005
+INTELSAT 37e
+1 50404U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9991
+2 50404   0.0636  72.0000 0001000   0.3590  24.6315  1.00271312 10006
+EUTELSAT 7A
+1 50405U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9992
+2 50405   0.0660 108.0000 0001000   9.9743 268.8359  1.00269340 10007
+HOTBIRD 13G
+1 50406U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9993
+2 50406   0.0249 144.0000 0001000   6.3375 314.1285  1.00269437 10003
+TURKSAT 5A
+1 50407U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9994
+2 50407   0.0547 180.0000 0001000   9.0342  16.5567  1.00272961 10001
+ARABSAT 6A
+1 50408U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9995
+2 50408   0.0347 216.0000 0001000   3.7484  52.4051  1.00270312 10003
+BADR-8
+1 50409U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9996
+2 50409   0.0483 252.0000 0001000   7.9252  61.1941  1.00265790 10003
+MEASAT-3d
+1 50410U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9998
+2 50410   0.0635 288.0000 0001000   6.1971  86.6987  1.00274128 10009
+JCSAT-17
+1 50411U 99001A   26165.50000000  .00000100  00000-0  00000-3 0  9999
+2 50411   0.0272 324.0000 0001000   4.6115  91.4318  1.00267553 10007
+IRIDIUM 100
+1 50412U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50412  86.4000   0.0000 0002000  85.0940   0.0000 14.34220927 10005
+IRIDIUM 101
+1 50413U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50413  86.4000   0.0000 0002000  94.0121  32.7000 14.34195522 10001
+IRIDIUM 102
+1 50414U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50414  86.4000   0.0000 0002000  86.5798  65.4000 14.34148346 10003
+IRIDIUM 103
+1 50415U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50415  86.4000   0.0000 0002000  88.4557  98.1000 14.34177514 10000
+IRIDIUM 104
+1 50416U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50416  86.4000   0.0000 0002000  91.3894 130.8000 14.34144862 10002
+IRIDIUM 105
+1 50417U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50417  86.4000   0.0000 0002000  87.5010 163.5000 14.34229061 10008
+IRIDIUM 106
+1 50418U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50418  86.4000   0.0000 0002000  86.9922 196.2000 14.34136939 10008
+IRIDIUM 107
+1 50419U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50419  86.4000   0.0000 0002000  89.8321 228.9000 14.34107441 10003
+IRIDIUM 108
+1 50420U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50420  86.4000   0.0000 0002000  90.7192 261.6000 14.34174962 10008
+IRIDIUM 109
+1 50421U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50421  86.4000   0.0000 0002000  94.9269 294.3000 14.34119046 10005
+IRIDIUM 110
+1 50422U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50422  86.4000   0.0000 0002000  94.7794 327.0000 14.34191646 10007
+IRIDIUM 111
+1 50423U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50423  86.4000  31.6000 0002000  87.7448  10.0000 14.34173186 10004
+IRIDIUM 112
+1 50424U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50424  86.4000  31.6000 0002000  91.8580  42.7000 14.34208934 10000
+IRIDIUM 113
+1 50425U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50425  86.4000  31.6000 0002000  85.4904  75.4000 14.34181281 10008
+IRIDIUM 114
+1 50426U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50426  86.4000  31.6000 0002000  89.9673 108.1000 14.34240831 10002
+IRIDIUM 115
+1 50427U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50427  86.4000  31.6000 0002000  87.8619 140.8000 14.34219772 10003
+IRIDIUM 116
+1 50428U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50428  86.4000  31.6000 0002000  91.0706 173.5000 14.34130464 10001
+IRIDIUM 117
+1 50429U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50429  86.4000  31.6000 0002000  91.3662 206.2000 14.34184178 10001
+IRIDIUM 118
+1 50430U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50430  86.4000  31.6000 0002000  91.7776 238.9000 14.34204186 10007
+IRIDIUM 119
+1 50431U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50431  86.4000  31.6000 0002000  91.5918 271.6000 14.34227667 10007
+IRIDIUM 120
+1 50432U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50432  86.4000  31.6000 0002000  91.2825 304.3000 14.34240681 10007
+IRIDIUM 121
+1 50433U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50433  86.4000  31.6000 0002000  91.4634 337.0000 14.34121787 10006
+IRIDIUM 122
+1 50434U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50434  86.4000  63.2000 0002000  89.4082  20.0000 14.34175915 10003
+IRIDIUM 123
+1 50435U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50435  86.4000  63.2000 0002000  92.3236  52.7000 14.34078027 10006
+IRIDIUM 124
+1 50436U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50436  86.4000  63.2000 0002000  87.9511  85.4000 14.34209496 10002
+IRIDIUM 125
+1 50437U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50437  86.4000  63.2000 0002000  86.7564 118.1000 14.34086432 10005
+IRIDIUM 126
+1 50438U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50438  86.4000  63.2000 0002000  90.3941 150.8000 14.34254298 10006
+IRIDIUM 127
+1 50439U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50439  86.4000  63.2000 0002000  90.3085 183.5000 14.34242697 10009
+IRIDIUM 128
+1 50440U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50440  86.4000  63.2000 0002000  93.3047 216.2000 14.34111394 10005
+IRIDIUM 129
+1 50441U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50441  86.4000  63.2000 0002000  93.2469 248.9000 14.34156370 10008
+IRIDIUM 130
+1 50442U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50442  86.4000  63.2000 0002000  93.0649 281.6000 14.34209312 10006
+IRIDIUM 131
+1 50443U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50443  86.4000  63.2000 0002000  88.3872 314.3000 14.34083034 10007
+IRIDIUM 132
+1 50444U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50444  86.4000  63.2000 0002000  94.6289 347.0000 14.34088151 10008
+IRIDIUM 133
+1 50445U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50445  86.4000  94.8000 0002000  94.6650  30.0000 14.34232028 10004
+IRIDIUM 134
+1 50446U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50446  86.4000  94.8000 0002000  92.2422  62.7000 14.34255988 10008
+IRIDIUM 135
+1 50447U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50447  86.4000  94.8000 0002000  94.6727  95.4000 14.34220918 10001
+IRIDIUM 136
+1 50448U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50448  86.4000  94.8000 0002000  88.6578 128.1000 14.34218136 10002
+IRIDIUM 137
+1 50449U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50449  86.4000  94.8000 0002000  85.1392 160.8000 14.34167314 10003
+IRIDIUM 138
+1 50450U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50450  86.4000  94.8000 0002000  89.5479 193.5000 14.34194566 10001
+IRIDIUM 139
+1 50451U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50451  86.4000  94.8000 0002000  91.7234 226.2000 14.34176912 10005
+IRIDIUM 140
+1 50452U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50452  86.4000  94.8000 0002000  93.2242 258.9000 14.34248058 10005
+IRIDIUM 141
+1 50453U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50453  86.4000  94.8000 0002000  86.0835 291.6000 14.34106764 10005
+IRIDIUM 142
+1 50454U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50454  86.4000  94.8000 0002000  85.2502 324.3000 14.34236847 10008
+IRIDIUM 143
+1 50455U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50455  86.4000  94.8000 0002000  90.6141 357.0000 14.34243051 10006
+IRIDIUM 144
+1 50456U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50456  86.4000 126.4000 0002000  87.2137  40.0000 14.34072643 10002
+IRIDIUM 145
+1 50457U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50457  86.4000 126.4000 0002000  93.2386  72.7000 14.34241878 10006
+IRIDIUM 146
+1 50458U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50458  86.4000 126.4000 0002000  88.0219 105.4000 14.34141659 10004
+IRIDIUM 147
+1 50459U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50459  86.4000 126.4000 0002000  86.3978 138.1000 14.34249252 10009
+IRIDIUM 148
+1 50460U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9995
+2 50460  86.4000 126.4000 0002000  88.0436 170.8000 14.34158525 10004
+IRIDIUM 149
+1 50461U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50461  86.4000 126.4000 0002000  85.9719 203.5000 14.34237452 10006
+IRIDIUM 150
+1 50462U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50462  86.4000 126.4000 0002000  86.3566 236.2000 14.34150729 10006
+IRIDIUM 151
+1 50463U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50463  86.4000 126.4000 0002000  91.7049 268.9000 14.34208628 10007
+IRIDIUM 152
+1 50464U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50464  86.4000 126.4000 0002000  94.4597 301.6000 14.34143825 10008
+IRIDIUM 153
+1 50465U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50465  86.4000 126.4000 0002000  92.4227 334.3000 14.34090905 10000
+IRIDIUM 154
+1 50466U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50466  86.4000 126.4000 0002000  89.1488   7.0000 14.34079804 10002
+IRIDIUM 155
+1 50467U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50467  86.4000 158.0000 0002000  89.8935  50.0000 14.34141623 10005
+IRIDIUM 156
+1 50468U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50468  86.4000 158.0000 0002000  94.5152  82.7000 14.34066543 10009
+IRIDIUM 157
+1 50469U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9994
+2 50469  86.4000 158.0000 0002000  88.7053 115.4000 14.34148677 10008
+IRIDIUM 158
+1 50470U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9996
+2 50470  86.4000 158.0000 0002000  94.5056 148.1000 14.34231090 10003
+IRIDIUM 159
+1 50471U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9997
+2 50471  86.4000 158.0000 0002000  85.9935 180.8000 14.34197136 10009
+IRIDIUM 160
+1 50472U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9998
+2 50472  86.4000 158.0000 0002000  90.4447 213.5000 14.34255569 10008
+IRIDIUM 161
+1 50473U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9999
+2 50473  86.4000 158.0000 0002000  88.5867 246.2000 14.34139628 10003
+IRIDIUM 162
+1 50474U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9990
+2 50474  86.4000 158.0000 0002000  86.8981 278.9000 14.34084432 10006
+IRIDIUM 163
+1 50475U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50475  86.4000 158.0000 0002000  93.4803 311.6000 14.34150943 10000
+IRIDIUM 164
+1 50476U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9992
+2 50476  86.4000 158.0000 0002000  91.6277 344.3000 14.34188341 10002
+IRIDIUM 165
+1 50477U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50477  86.4000 158.0000 0002000  90.9715  17.0000 14.34064271 10001
+COSMOS 2251 DEB
+1 50478U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9997
+2 50478  72.9743 283.2461 0058634  24.6997 275.4567 14.46294420 10000
+COSMOS 2251 DEB
+1 50479U 99001A   26165.50000000  .00000100  00000-0  00043-3 0  9990
+2 50479  75.4788  77.7425 0019017 324.1912   1.0208 14.27957007 10002
+COSMOS 2251 DEB
+1 50480U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50480  72.5200  52.0877 0021577 237.9808   9.2809 14.34960923 10003
+COSMOS 2251 DEB
+1 50481U 99001A   26165.50000000  .00000100  00000-0  00028-3 0  9996
+2 50481  72.9517 284.3945 0021553  18.8636 267.0185 14.28385826 10001
+COSMOS 2251 DEB
+1 50482U 99001A   26165.50000000  .00000100  00000-0  00047-3 0  9998
+2 50482  73.9050 268.4395 0053757  39.2594 181.3819 13.88638761 10004
+COSMOS 2251 DEB
+1 50483U 99001A   26165.50000000  .00000100  00000-0  00007-3 0  9995
+2 50483  75.1329  15.6114 0054537 164.8953 347.0494 13.81069930 10009
+COSMOS 2251 DEB
+1 50484U 99001A   26165.50000000  .00000100  00000-0  00008-3 0  9997
+2 50484  73.6065 172.4335 0051575 327.4923  26.4567 13.96531946 10006
+COSMOS 2251 DEB
+1 50485U 99001A   26165.50000000  .00000100  00000-0  00049-3 0  9993
+2 50485  72.2627 218.9871 0065142 197.4083 117.0668 14.32764584 10000
+COSMOS 2251 DEB
+1 50486U 99001A   26165.50000000  .00000100  00000-0  00034-3 0  9998
+2 50486  73.8149 191.0005 0014421 252.6406 307.0054 14.03520998 10001
+COSMOS 2251 DEB
+1 50487U 99001A   26165.50000000  .00000100  00000-0  00025-3 0  9999
+2 50487  74.8834 276.8266 0047897  82.2577 122.0154 14.38183368 10004
+COSMOS 2251 DEB
+1 50488U 99001A   26165.50000000  .00000100  00000-0  00046-3 0  9993
+2 50488  72.3803 149.7563 0068185 134.7484  54.9500 14.19208980 10000
+COSMOS 2251 DEB
+1 50489U 99001A   26165.50000000  .00000100  00000-0  00030-3 0  9997
+2 50489  75.3271  24.1680 0014173 265.9666 292.2369 14.49289804 10003
+COSMOS 2251 DEB
+1 50490U 99001A   26165.50000000  .00000100  00000-0  00038-3 0  9997
+2 50490  74.2463 211.1274 0016611 127.2953 239.5226 14.27859737 10001
+COSMOS 2251 DEB
+1 50491U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9992
+2 50491  74.8842 312.5132 0062038 126.5926 208.0507 13.72525072 10008
+COSMOS 2251 DEB
+1 50492U 99001A   26165.50000000  .00000100  00000-0  00030-3 0  9991
+2 50492  72.8970 236.4251 0085310 132.3220 274.5380 14.47915305 10007
+COSMOS 2251 DEB
+1 50493U 99001A   26165.50000000  .00000100  00000-0  00006-3 0  9995
+2 50493  75.3806 290.5997 0082750 220.8864 231.3717 13.72009914 10006
+COSMOS 2251 DEB
+1 50494U 99001A   26165.50000000  .00000100  00000-0  00020-3 0  9992
+2 50494  75.3178 334.4703 0022139 252.9716 111.2345 14.33446302 10006
+COSMOS 2251 DEB
+1 50495U 99001A   26165.50000000  .00000100  00000-0  00006-3 0  9997
+2 50495  75.4795   2.1981 0043074  51.0749 227.9419 14.06929998 10009
+COSMOS 2251 DEB
+1 50496U 99001A   26165.50000000  .00000100  00000-0  00039-3 0  9994
+2 50496  72.8605 268.6002 0037385 133.2191 259.7745 14.19823504 10001
+COSMOS 2251 DEB
+1 50497U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9991
+2 50497  72.3398 204.3337 0019953 222.4217 242.6287 14.53025930 10002
+COSMOS 2251 DEB
+1 50498U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9990
+2 50498  73.9426 238.2979 0030950 271.7795  40.9743 14.17855855 10001
+COSMOS 2251 DEB
+1 50499U 99001A   26165.50000000  .00000100  00000-0  00031-3 0  9999
+2 50499  74.7139 101.9687 0068377  16.3503 142.2948 14.13919615 10002
+COSMOS 2251 DEB
+1 50500U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50500  73.2057   2.7674 0018037  91.9870 118.1240 14.38526759 10003
+COSMOS 2251 DEB
+1 50501U 99001A   26165.50000000  .00000100  00000-0  00041-3 0  9994
+2 50501  72.7028 268.9251 0071848 180.0944 300.0075 14.23345058 10007
+COSMOS 2251 DEB
+1 50502U 99001A   26165.50000000  .00000100  00000-0  00030-3 0  9993
+2 50502  75.4471  25.9472 0006780 331.6185 310.3596 14.53976426 10004
+COSMOS 2251 DEB
+1 50503U 99001A   26165.50000000  .00000100  00000-0  00041-3 0  9996
+2 50503  74.8380 206.4239 0015941   7.5084 116.9165 14.20013189 10004
+COSMOS 2251 DEB
+1 50504U 99001A   26165.50000000  .00000100  00000-0  00031-3 0  9996
+2 50504  75.3281 222.5251 0013372 304.0144  87.5939 13.76611225 10009
+COSMOS 2251 DEB
+1 50505U 99001A   26165.50000000  .00000100  00000-0  00027-3 0  9992
+2 50505  73.5831 188.6265 0037253 119.9047  60.5278 14.29595756 10003
+COSMOS 2251 DEB
+1 50506U 99001A   26165.50000000  .00000100  00000-0  00041-3 0  9999
+2 50506  74.0398  41.0496 0038190 261.8565 294.8215 13.77778463 10002
+COSMOS 2251 DEB
+1 50507U 99001A   26165.50000000  .00000100  00000-0  00012-3 0  9998
+2 50507  72.5858  85.0568 0062227 273.6775 235.9832 14.39793280 10001
+COSMOS 2251 DEB
+1 50508U 99001A   26165.50000000  .00000100  00000-0  00030-3 0  9999
+2 50508  73.9765 278.2253 0077188 161.6059 332.6955 13.90655734 10002
+COSMOS 2251 DEB
+1 50509U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9993
+2 50509  74.4981 228.7074 0064585  54.3447  24.5831 13.81301511 10007
+COSMOS 2251 DEB
+1 50510U 99001A   26165.50000000  .00000100  00000-0  00007-3 0  9996
+2 50510  73.0987 109.0154 0053197 111.7468 162.6890 14.52697555 10002
+COSMOS 2251 DEB
+1 50511U 99001A   26165.50000000  .00000100  00000-0  00025-3 0  9997
+2 50511  72.3069 299.4108 0086252 221.4030 182.5444 13.81301243 10004
+COSMOS 2251 DEB
+1 50512U 99001A   26165.50000000  .00000100  00000-0  00019-3 0  9991
+2 50512  75.1673 199.5539 0047724 291.5337 234.6615 13.78626323 10008
+COSMOS 2251 DEB
+1 50513U 99001A   26165.50000000  .00000100  00000-0  00037-3 0  9992
+2 50513  72.6034 171.2265 0014832 323.6857 123.6376 14.52172385 10001
+COSMOS 2251 DEB
+1 50514U 99001A   26165.50000000  .00000100  00000-0  00012-3 0  9996
+2 50514  72.6902 181.6376 0046587 158.1918 188.1893 14.35223692 10004
+COSMOS 2251 DEB
+1 50515U 99001A   26165.50000000  .00000100  00000-0  00034-3 0  9991
+2 50515  73.1316 134.2267 0037144 215.2389 284.1217 14.20805240 10005
+COSMOS 2251 DEB
+1 50516U 99001A   26165.50000000  .00000100  00000-0  00045-3 0  9994
+2 50516  72.3780  23.7283 0031993 260.5441 236.3631 13.97198111 10004
+COSMOS 2251 DEB
+1 50517U 99001A   26165.50000000  .00000100  00000-0  00036-3 0  9995
+2 50517  73.3334 314.3807 0018435 125.9355 348.3707 14.05497060 10009
+COSMOS 2251 DEB
+1 50518U 99001A   26165.50000000  .00000100  00000-0  00041-3 0  9992
+2 50518  74.3802 141.1049 0034410 135.6046 284.9983 13.75076829 10004
+COSMOS 2251 DEB
+1 50519U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9994
+2 50519  75.3158 241.2419 0070114 189.5016 232.5689 13.91999407 10005
+COSMOS 2251 DEB
+1 50520U 99001A   26165.50000000  .00000100  00000-0  00015-3 0  9996
+2 50520  73.4504 130.2581 0025348 341.1606 175.0575 14.41338682 10001
+COSMOS 2251 DEB
+1 50521U 99001A   26165.50000000  .00000100  00000-0  00044-3 0  9999
+2 50521  72.3087  49.5235 0014608 277.5149 300.6431 13.82982127 10005
+COSMOS 2251 DEB
+1 50522U 99001A   26165.50000000  .00000100  00000-0  00042-3 0  9998
+2 50522  73.3471  13.5891 0017449 135.6192  58.4090 13.89640119 10009
+COSMOS 2251 DEB
+1 50523U 99001A   26165.50000000  .00000100  00000-0  00015-3 0  9999
+2 50523  75.2362 277.5952 0046578 147.9091 243.4907 14.42678695 10002
+COSMOS 2251 DEB
+1 50524U 99001A   26165.50000000  .00000100  00000-0  00041-3 0  9999
+2 50524  73.1397 159.9115 0047648 192.2440 111.4084 13.91162155 10004
+COSMOS 2251 DEB
+1 50525U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9993
+2 50525  75.3405 168.8456 0094977 354.3983 166.2048 14.24447073 10006
+COSMOS 2251 DEB
+1 50526U 99001A   26165.50000000  .00000100  00000-0  00016-3 0  9993
+2 50526  74.1098 137.4741 0082604 288.4533  49.8235 13.72703667 10003
+COSMOS 2251 DEB
+1 50527U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50527  75.4965 230.8245 0014746 304.5212 306.4198 14.07959643 10000
+COSMOS 2251 DEB
+1 50528U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9993
+2 50528  73.0912 274.7221 0018998 157.4901 340.7088 13.77830471 10003
+COSMOS 2251 DEB
+1 50529U 99001A   26165.50000000  .00000100  00000-0  00049-3 0  9992
+2 50529  73.3983 162.4061 0010059 180.7226  84.8801 14.55420032 10003
+COSMOS 2251 DEB
+1 50530U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9993
+2 50530  72.1128 134.9686 0084721 233.9858 284.8970 13.75680427 10005
+COSMOS 2251 DEB
+1 50531U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9997
+2 50531  75.3190 103.2766 0018185 253.9930 161.4965 13.95671818 10002
+COSMOS 2251 DEB
+1 50532U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9994
+2 50532  73.0237  28.5213 0057136 261.8045 189.9977 13.83785991 10003
+COSMOS 2251 DEB
+1 50533U 99001A   26165.50000000  .00000100  00000-0  00009-3 0  9993
+2 50533  73.2046 103.7166 0044883 285.8037 164.5609 14.53473944 10000
+COSMOS 2251 DEB
+1 50534U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9991
+2 50534  74.3870 325.8529 0053960  87.0977  51.6877 14.56366503 10007
+COSMOS 2251 DEB
+1 50535U 99001A   26165.50000000  .00000100  00000-0  00008-3 0  9994
+2 50535  72.9623 221.3314 0068115  30.8210 350.8756 14.20113113 10002
+COSMOS 2251 DEB
+1 50536U 99001A   26165.50000000  .00000100  00000-0  00033-3 0  9993
+2 50536  74.0293 189.3814 0057644 140.5633 169.2486 13.70856005 10000
+COSMOS 2251 DEB
+1 50537U 99001A   26165.50000000  .00000100  00000-0  00033-3 0  9994
+2 50537  73.0146 353.1742 0079909 124.1289 263.8588 14.56384372 10003
+FENGYUN 1C DEB
+1 50538U 99001A   26165.50000000  .00000100  00000-0  00007-3 0  9996
+2 50538  98.2650 277.7405 0006413 196.5649 292.8632 14.02892322 10005
+FENGYUN 1C DEB
+1 50539U 99001A   26165.50000000  .00000100  00000-0  00023-3 0  9995
+2 50539  98.9908 280.4913 0051643 292.1392  22.7162 14.22723827 10000
+FENGYUN 1C DEB
+1 50540U 99001A   26165.50000000  .00000100  00000-0  00016-3 0  9999
+2 50540  97.6876 164.7646 0018359  15.0861 336.0136 14.35513438 10000
+FENGYUN 1C DEB
+1 50541U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9999
+2 50541  98.1066 356.0842 0061003  68.7972 128.5107 14.16928926 10007
+FENGYUN 1C DEB
+1 50542U 99001A   26165.50000000  .00000100  00000-0  00027-3 0  9993
+2 50542  97.8490 311.6874 0031337 320.2151 267.5908 14.32621621 10002
+FENGYUN 1C DEB
+1 50543U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9991
+2 50543  98.5924 139.1921 0041309 332.7518 186.9393 13.85787440 10005
+FENGYUN 1C DEB
+1 50544U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9991
+2 50544  98.8049 261.7493 0066320 196.3708 115.6361 14.51813449 10005
+FENGYUN 1C DEB
+1 50545U 99001A   26165.50000000  .00000100  00000-0  00004-3 0  9991
+2 50545  98.8052 237.9309 0035810 248.3153 126.5569 14.34531433 10005
+FENGYUN 1C DEB
+1 50546U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9993
+2 50546  99.5963 313.2134 0024140 352.8098 341.2456 14.31074987 10006
+FENGYUN 1C DEB
+1 50547U 99001A   26165.50000000  .00000100  00000-0  00019-3 0  9999
+2 50547  99.2022 229.5045 0055314 343.0042  51.4006 14.30270205 10009
+FENGYUN 1C DEB
+1 50548U 99001A   26165.50000000  .00000100  00000-0  00018-3 0  9999
+2 50548  97.7345 281.2723 0062945 131.8783 137.8276 14.55204804 10009
+FENGYUN 1C DEB
+1 50549U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9999
+2 50549  99.4976 217.8341 0031645 274.7104 206.6118 14.06968087 10003
+FENGYUN 1C DEB
+1 50550U 99001A   26165.50000000  .00000100  00000-0  00013-3 0  9997
+2 50550  98.0992 143.2923 0011735 264.8429 179.6558 14.09118379 10005
+FENGYUN 1C DEB
+1 50551U 99001A   26165.50000000  .00000100  00000-0  00027-3 0  9993
+2 50551  98.1206 202.2022 0037363 358.6914 102.8077 14.37900340 10009
+FENGYUN 1C DEB
+1 50552U 99001A   26165.50000000  .00000100  00000-0  00005-3 0  9990
+2 50552  99.3057 176.8321 0037807 323.5245 160.2400 14.48467156 10009
+FENGYUN 1C DEB
+1 50553U 99001A   26165.50000000  .00000100  00000-0  00027-3 0  9995
+2 50553  98.2392 245.4945 0029751  23.3781 195.1817 13.94937036 10002
+FENGYUN 1C DEB
+1 50554U 99001A   26165.50000000  .00000100  00000-0  00006-3 0  9993
+2 50554  99.4546 306.4903 0052102 285.7307 183.1521 14.04587619 10002
+FENGYUN 1C DEB
+1 50555U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9994
+2 50555  99.1807  72.3529 0005023 199.4477 132.8080 14.47227203 10000
+FENGYUN 1C DEB
+1 50556U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9997
+2 50556  97.7724 198.5929 0026815 359.8542 258.7931 14.11867822 10006
+FENGYUN 1C DEB
+1 50557U 99001A   26165.50000000  .00000100  00000-0  00021-3 0  9993
+2 50557  97.7475 276.8992 0077873 231.2419 161.9908 13.96530335 10003
+FENGYUN 1C DEB
+1 50558U 99001A   26165.50000000  .00000100  00000-0  00014-3 0  9996
+2 50558  99.1605 124.0253 0052264  65.5067 347.8553 13.92612426 10002
+FENGYUN 1C DEB
+1 50559U 99001A   26165.50000000  .00000100  00000-0  00022-3 0  9996
+2 50559  97.8483 327.8564 0014782  59.2765 116.1579 14.53618932 10009
+FENGYUN 1C DEB
+1 50560U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9992
+2 50560  99.3899 124.5683 0068136  90.2179 228.6206 13.88120172 10006
+FENGYUN 1C DEB
+1 50561U 99001A   26165.50000000  .00000100  00000-0  00007-3 0  9992
+2 50561  98.6670  45.0613 0041698  60.7089 338.9785 14.34807509 10007
+FENGYUN 1C DEB
+1 50562U 99001A   26165.50000000  .00000100  00000-0  00003-3 0  9999
+2 50562  98.8103 237.1438 0067874 202.9025 297.0851 14.03947351 10009
+FENGYUN 1C DEB
+1 50563U 99001A   26165.50000000  .00000100  00000-0  00020-3 0  9999
+2 50563  98.7535  16.3662 0053137 276.1052 149.9712 14.09710241 10007
+FENGYUN 1C DEB
+1 50564U 99001A   26165.50000000  .00000100  00000-0  00021-3 0  9991
+2 50564  98.1793 179.2937 0076662 173.8601 289.6877 14.10754491 10004
+FENGYUN 1C DEB
+1 50565U 99001A   26165.50000000  .00000100  00000-0  00019-3 0  9999
+2 50565  97.7198 107.0762 0036849 174.3304  73.4483 14.52270259 10006
+FENGYUN 1C DEB
+1 50566U 99001A   26165.50000000  .00000100  00000-0  00013-3 0  9994
+2 50566  99.0684 112.5297 0069279 351.1347  47.0758 14.04112013 10003
+FENGYUN 1C DEB
+1 50567U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9992
+2 50567  98.5329 202.1944 0023595  89.2508  34.8522 14.33583086 10005
+FENGYUN 1C DEB
+1 50568U 99001A   26165.50000000  .00000100  00000-0  00018-3 0  9991
+2 50568  98.0965 138.2939 0069628  57.4919 117.8769 14.11616788 10007
+FENGYUN 1C DEB
+1 50569U 99001A   26165.50000000  .00000100  00000-0  00003-3 0  9996
+2 50569  98.5965 112.5774 0042633 179.5535 111.0746 14.00871069 10006
+FENGYUN 1C DEB
+1 50570U 99001A   26165.50000000  .00000100  00000-0  00016-3 0  9992
+2 50570  99.5334 340.2838 0019566 127.0422  18.1945 14.19701901 10007
+FENGYUN 1C DEB
+1 50571U 99001A   26165.50000000  .00000100  00000-0  00026-3 0  9994
+2 50571  98.5412 317.6422 0044325 304.9821 155.1340 14.08775490 10004
+FENGYUN 1C DEB
+1 50572U 99001A   26165.50000000  .00000100  00000-0  00017-3 0  9995
+2 50572  98.3319 261.9029 0033844 205.3014  70.0759 14.00817924 10005
+FENGYUN 1C DEB
+1 50573U 99001A   26165.50000000  .00000100  00000-0  00006-3 0  9994
+2 50573  99.1288  26.4714 0024538 356.0727 244.9435 14.19789764 10003
+FENGYUN 1C DEB
+1 50574U 99001A   26165.50000000  .00000100  00000-0  00008-3 0  9997
+2 50574  99.1898 351.0298 0029109 338.0215 271.7875 14.27984447 10006
+FENGYUN 1C DEB
+1 50575U 99001A   26165.50000000  .00000100  00000-0  00015-3 0  9996
+2 50575  97.6906 183.2841 0013551 119.8947 170.5479 14.20098564 10005
+FENGYUN 1C DEB
+1 50576U 99001A   26165.50000000  .00000100  00000-0  00022-3 0  9995
+2 50576  98.2559 218.2538 0050206  58.5007 356.6217 14.18958731 10008
+FENGYUN 1C DEB
+1 50577U 99001A   26165.50000000  .00000100  00000-0  00025-3 0  9999
+2 50577  99.2566 107.7244 0043990 255.1463 107.9246 14.32287936 10004
+FENGYUN 1C DEB
+1 50578U 99001A   26165.50000000  .00000100  00000-0  00021-3 0  9996
+2 50578  99.5598 132.6088 0047945 286.8317 261.1167 14.07350762 10004
+FENGYUN 1C DEB
+1 50579U 99001A   26165.50000000  .00000100  00000-0  00022-3 0  9998
+2 50579  99.5341   9.5930 0063283 279.4183 207.9484 14.21984981 10003
+FENGYUN 1C DEB
+1 50580U 99001A   26165.50000000  .00000100  00000-0  00021-3 0  9999
+2 50580  98.8581 210.0684 0050719 302.8202  53.1993 14.44816792 10006
+FENGYUN 1C DEB
+1 50581U 99001A   26165.50000000  .00000100  00000-0  00021-3 0  9990
+2 50581  97.8198  11.3654 0004458 112.9293  54.5153 13.87600661 10003
+FENGYUN 1C DEB
+1 50582U 99001A   26165.50000000  .00000100  00000-0  00006-3 0  9994
+2 50582  99.4410 147.7359 0070206 264.9014  22.4213 14.00015036 10001
+FENGYUN 1C DEB
+1 50583U 99001A   26165.50000000  .00000100  00000-0  00027-3 0  9998
+2 50583  98.9245  74.6430 0043461 112.9509  62.3457 14.33137556 10005
+FENGYUN 1C DEB
+1 50584U 99001A   26165.50000000  .00000100  00000-0  00019-3 0  9990
+2 50584  99.1440 123.2377 0058511 231.5913 249.5928 14.30945618 10001
+FENGYUN 1C DEB
+1 50585U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9992
+2 50585  98.7162  69.2151 0020314 350.2478 107.1412 14.39052780 10007
+FENGYUN 1C DEB
+1 50586U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9993
+2 50586  98.2341  74.6200 0029857 336.1321 286.3459 14.05082890 10007
+FENGYUN 1C DEB
+1 50587U 99001A   26165.50000000  .00000100  00000-0  00024-3 0  9999
+2 50587  98.3594  43.8747 0078472 294.6159 343.6592 14.07145713 10008
+COSMOS 1408 DEB
+1 50588U 99001A   26165.50000000  .00000100  00000-0  00053-3 0  9992
+2 50588  83.1141 104.5630 0044831 159.2554  92.3198 15.36651036 10005
+COSMOS 1408 DEB
+1 50589U 99001A   26165.50000000  .00000100  00000-0  00062-3 0  9993
+2 50589  83.3330  72.7445 0085059  49.4183 221.6437 15.23207758 10000
+COSMOS 1408 DEB
+1 50590U 99001A   26165.50000000  .00000100  00000-0  00074-3 0  9998
+2 50590  82.9310  87.2849 0078363  18.8968 148.7885 15.16254235 10005
+COSMOS 1408 DEB
+1 50591U 99001A   26165.50000000  .00000100  00000-0  00094-3 0  9991
+2 50591  82.4052  36.1962 0068290 334.4759 146.4867 15.10943081 10009
+COSMOS 1408 DEB
+1 50592U 99001A   26165.50000000  .00000100  00000-0  00091-3 0  9999
+2 50592  82.5995 316.2239 0115850 115.6204 232.5233 15.26464358 10001
+COSMOS 1408 DEB
+1 50593U 99001A   26165.50000000  .00000100  00000-0  00025-3 0  9997
+2 50593  82.9352  32.2059 0088158 337.2010 328.7627 15.21318905 10001
+COSMOS 1408 DEB
+1 50594U 99001A   26165.50000000  .00000100  00000-0  00094-3 0  9994
+2 50594  83.3196 317.6082 0119674 142.9180 178.3382 15.42706236 10004
+COSMOS 1408 DEB
+1 50595U 99001A   26165.50000000  .00000100  00000-0  00098-3 0  9999
+2 50595  83.2767 346.3673 0006065 204.4663  38.6282 15.02832729 10002
+COSMOS 1408 DEB
+1 50596U 99001A   26165.50000000  .00000100  00000-0  00052-3 0  9990
+2 50596  82.9433 102.4422 0061799 337.8818 306.3815 14.99559645 10005
+COSMOS 1408 DEB
+1 50597U 99001A   26165.50000000  .00000100  00000-0  00076-3 0  9997
+2 50597  82.5625  69.4121 0057775  92.6154  67.0317 15.46142380 10006
+COSMOS 1408 DEB
+1 50598U 99001A   26165.50000000  .00000100  00000-0  00084-3 0  9997
+2 50598  83.1573 284.6764 0025181 308.2127 322.9354 15.21656070 10005
+COSMOS 1408 DEB
+1 50599U 99001A   26165.50000000  .00000100  00000-0  00032-3 0  9991
+2 50599  83.0693 185.5010 0026249  50.6203 116.4966 15.47556023 10000
+COSMOS 1408 DEB
+1 50600U 99001A   26165.50000000  .00000100  00000-0  00011-3 0  9991
+2 50600  83.1538  93.8827 0114714 108.7005 260.2377 15.39467328 10003
+COSMOS 1408 DEB
+1 50601U 99001A   26165.50000000  .00000100  00000-0  00055-3 0  9990
+2 50601  82.4621 235.3260 0018595 110.4503 145.9500 15.15044662 10009
+COSMOS 1408 DEB
+1 50602U 99001A   26165.50000000  .00000100  00000-0  00065-3 0  9992
+2 50602  82.7110 322.2426 0018502 329.8069 106.2135 15.14476234 10004
+COSMOS 1408 DEB
+1 50603U 99001A   26165.50000000  .00000100  00000-0  00059-3 0  9996
+2 50603  82.5532  78.8863 0090989 218.0660 149.7044 15.45002405 10005
+COSMOS 1408 DEB
+1 50604U 99001A   26165.50000000  .00000100  00000-0  00088-3 0  9999
+2 50604  83.0641 169.4981 0030117  89.0876 271.7062 15.23264142 10003
+COSMOS 1408 DEB
+1 50605U 99001A   26165.50000000  .00000100  00000-0  00059-3 0  9998
+2 50605  83.1038  29.4733 0013981 203.1007  22.2329 15.28104275 10000
+COSMOS 1408 DEB
+1 50606U 99001A   26165.50000000  .00000100  00000-0  00028-3 0  9995
+2 50606  82.5499 181.9753 0042733 187.3230  41.8464 15.21394886 10008
+COSMOS 1408 DEB
+1 50607U 99001A   26165.50000000  .00000100  00000-0  00051-3 0  9992
+2 50607  82.9104 209.9332 0097999 163.2356 184.7692 15.47326505 10007
+COSMOS 1408 DEB
+1 50608U 99001A   26165.50000000  .00000100  00000-0  00077-3 0  9991
+2 50608  83.2069  20.7852 0088177 142.5415 293.9232 15.27268990 10006
+COSMOS 1408 DEB
+1 50609U 99001A   26165.50000000  .00000100  00000-0  00016-3 0  9995
+2 50609  82.7445 208.1921 0012332 357.8845 336.4498 15.49821986 10007
+COSMOS 1408 DEB
+1 50610U 99001A   26165.50000000  .00000100  00000-0  00068-3 0  9994
+2 50610  82.8089 336.1592 0093431 275.6980 352.2000 15.50564235 10004
+COSMOS 1408 DEB
+1 50611U 99001A   26165.50000000  .00000100  00000-0  00071-3 0  9999
+2 50611  82.7825 151.3303 0105006 326.4362 135.2324 14.99365008 10007
+COSMOS 1408 DEB
+1 50612U 99001A   26165.50000000  .00000100  00000-0  00057-3 0  9994
+2 50612  83.0535 238.2453 0044993  64.2505 193.4131 15.23169345 10000
+COSMOS 1408 DEB
+1 50613U 99001A   26165.50000000  .00000100  00000-0  00059-3 0  9997
+2 50613  82.4035 262.0289 0007614 107.4107 242.4599 15.40162116 10009
+COSMOS 1408 DEB
+1 50614U 99001A   26165.50000000  .00000100  00000-0  00075-3 0  9996
+2 50614  82.6475 191.4961 0044808  99.2339 337.4677 15.08187784 10007
+COSMOS 1408 DEB
+1 50615U 99001A   26165.50000000  .00000100  00000-0  00028-3 0  9995
+2 50615  82.8192  40.6241 0093096 318.1524   5.6325 15.08914229 10000
+COSMOS 1408 DEB
+1 50616U 99001A   26165.50000000  .00000100  00000-0  00046-3 0  9996
+2 50616  82.9978  36.3228 0085877  17.5235 266.5948 15.50463368 10007
+COSMOS 1408 DEB
+1 50617U 99001A   26165.50000000  .00000100  00000-0  00083-3 0  9998
+2 50617  83.2637  84.3621 0011491 181.4025 104.1348 15.40455815 10001
+COSMOS 1408 DEB
+1 50618U 99001A   26165.50000000  .00000100  00000-0  00022-3 0  9992
+2 50618  82.9979 263.3463 0082341 115.4394 108.6352 15.34964954 10004
+COSMOS 1408 DEB
+1 50619U 99001A   26165.50000000  .00000100  00000-0  00092-3 0  9990
+2 50619  82.7005 237.6765 0012010 341.4673 316.6970 15.40251363 10006
+COSMOS 1408 DEB
+1 50620U 99001A   26165.50000000  .00000100  00000-0  00080-3 0  9999
+2 50620  82.8956 225.3575 0116813 338.9711 241.6833 15.29149960 10008
+COSMOS 1408 DEB
+1 50621U 99001A   26165.50000000  .00000100  00000-0  00086-3 0  9996
+2 50621  82.5492 114.7444 0048292 271.5898 170.4668 15.29732284 10002
+COSMOS 1408 DEB
+1 50622U 99001A   26165.50000000  .00000100  00000-0  00060-3 0  9999
+2 50622  83.2058 108.2651 0110195 202.4589 348.4030 15.14264530 10007
+COSMOS 1408 DEB
+1 50623U 99001A   26165.50000000  .00000100  00000-0  00018-3 0  9993
+2 50623  82.6033  48.2734 0079371 332.0014 304.9680 15.39070258 10009
+COSMOS 1408 DEB
+1 50624U 99001A   26165.50000000  .00000100  00000-0  00026-3 0  9993
+2 50624  82.6685 260.8505 0082472 217.0519 314.5034 15.41908482 10001
+COSMOS 1408 DEB
+1 50625U 99001A   26165.50000000  .00000100  00000-0  00096-3 0  9991
+2 50625  82.9589 274.2107 0060130 313.0106 119.8672 15.13384041 10003
+COSMOS 1408 DEB
+1 50626U 99001A   26165.50000000  .00000100  00000-0  00031-3 0  9991
+2 50626  83.3621   5.5201 0018491 359.8459 172.4115 15.02254683 10001
+COSMOS 1408 DEB
+1 50627U 99001A   26165.50000000  .00000100  00000-0  00058-3 0  9991
+2 50627  83.3151 217.5846 0068489 279.1850 137.0382 15.41147280 10001
+SL-16 R/B (1)
+1 50628U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9990
+2 50628  53.1482  94.1622 0025366  35.4990 353.2746 13.79940382 10009
+SL-8 R/B (2)
+1 50629U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9991
+2 50629  60.8643 302.3032 0019164 149.0149 202.5089 12.64173971 10001
+SL-4 R/B (3)
+1 50630U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9993
+2 50630  43.4892  52.5322 0046803 208.4915 150.3281 14.61960272 10004
+CZ-3B R/B (4)
+1 50631U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9994
+2 50631  38.6688 118.7515 0041834 179.7485 235.6589 14.22229174 10008
+ARIANE 5 R/B (5)
+1 50632U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9995
+2 50632  75.9393  92.6376 0048358 231.0100 176.6144 12.89438978 10001
+DELTA IV R/B (6)
+1 50633U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9996
+2 50633  39.7764 286.1912 0036295 175.7939 330.0838 14.93770287 10004
+ATLAS V R/B (7)
+1 50634U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9997
+2 50634  65.9496 231.0514 0002657 304.8111 340.2677 15.33760289 10007
+H-2A R/B (8)
+1 50635U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9998
+2 50635  74.7751 275.1620 0042284  83.3160 254.5810 14.11679130 10005
+ROKOT R/B (9)
+1 50636U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9999
+2 50636  28.6399 182.0639 0031273 240.0317 221.9470 14.24396998 10002
+DNEPR R/B (10)
+1 50637U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9990
+2 50637  61.8243 175.6276 0028030   4.2663 190.5904 15.53239990 10000
+SL-16 R/B (11)
+1 50638U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9991
+2 50638  47.2319 351.8926 0040844 242.6519 290.2204 15.49271193 10005
+SL-8 R/B (12)
+1 50639U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9992
+2 50639  91.6841  38.5259 0008295  69.0955 189.5242 15.19965335 10003
+SL-4 R/B (13)
+1 50640U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9994
+2 50640  85.0650  96.2369 0019279 146.1699 203.4008 14.16684896 10001
+CZ-3B R/B (14)
+1 50641U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9995
+2 50641  97.3163  81.3086 0042545 235.3449 308.9589 13.28494868 10009
+ARIANE 5 R/B (15)
+1 50642U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9996
+2 50642  81.1710  33.6602 0028082  20.2014   3.4021 14.22416954 10005
+DELTA IV R/B (16)
+1 50643U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9997
+2 50643  39.9969 179.9490 0039434 203.7084 308.8657 14.04776856 10007
+ATLAS V R/B (17)
+1 50644U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9998
+2 50644  34.6753 190.1373 0011359 312.5221 319.5196 15.39763888 10001
+H-2A R/B (18)
+1 50645U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9999
+2 50645  61.2850  16.7623 0046353 323.7522 202.8636 15.28002969 10004
+ROKOT R/B (19)
+1 50646U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9990
+2 50646  30.3031 334.3559 0048111 211.3330 270.8116 14.43811444 10003
+DNEPR R/B (20)
+1 50647U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9991
+2 50647  77.8898 143.3866 0008960  86.5700 300.4742 15.27051777 10004
+SL-16 R/B (21)
+1 50648U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9992
+2 50648  55.2410 322.7493 0038024  50.3822 355.8521 14.38063803 10005
+SL-8 R/B (22)
+1 50649U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9993
+2 50649  78.6914 180.2854 0003631 157.3518 301.9229 12.48266124 10005
+SL-4 R/B (23)
+1 50650U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9995
+2 50650  51.8415 276.8420 0020438 278.4798  10.6652 12.53390762 10002
+CZ-3B R/B (24)
+1 50651U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9996
+2 50651  47.1329 357.3309 0018434 338.8114 155.4653 13.86857652 10004
+ARIANE 5 R/B (25)
+1 50652U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9997
+2 50652  75.5786 237.8419 0031312 287.2999 256.7191 15.23842451 10005
+DELTA IV R/B (26)
+1 50653U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9998
+2 50653  33.7427  55.5195 0032061 266.2759 114.0042 13.20491065 10000
+ATLAS V R/B (27)
+1 50654U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9999
+2 50654  35.4586   1.8703 0018635  97.1159  47.7025 14.45892986 10009
+H-2A R/B (28)
+1 50655U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9990
+2 50655  41.1174 161.5837 0020994   9.4543 127.4091 13.67040820 10007
+ROKOT R/B (29)
+1 50656U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9991
+2 50656  34.5145 215.2958 0019876 105.0650 139.6078 14.40491996 10008
+DNEPR R/B (30)
+1 50657U 99001A   26165.50000000  .00000100  00000-0  00010-3 0  9992
+2 50657  33.9290 324.4090 0048930 205.9058  61.0499 12.66622628 10007`;
+</script>
+<script>
+(function(){
+'use strict';
+var sat=window.satellite;
+var RE=6378.137,MU=398600.4418,TAU=Math.PI*2,PI=Math.PI;
+
+// Parse TLE text
+function parseTLEs(text){
+  var lines=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var objs=[];
+  for(var i=0;i<lines.length-2;i++){
+    var l1=lines[i+1],l2=lines[i+2];
+    if(l1[0]!=='1'||l2[0]!=='2'){continue;}
+    var name=lines[i];
+    if(name[0]==='1'||name[0]==='2'){continue;}
+    try{
+      var satrec=sat.twoline2satrec(l1,l2);
+      if(!satrec||satrec.error!==0){i+=2;continue;}
+      var noradId=parseInt(l1.substring(2,7));
+      var n=parseFloat(l2.substring(52,63));
+      var period=n>0?1440/n:90;
+      var inc=parseFloat(l2.substring(8,16));
+      var ecc=parseFloat('0.'+l2.substring(26,33).trim());
+      var t=guessType(name);
+      objs.push({n:name,t:t,noradId:noradId,satrec:satrec,period:period,inc:inc,ecc:ecc});
+    }catch(e){}
+    i+=2;
+  }
+  return objs;
+}
+
+function guessType(n){
+  var u=n.toUpperCase();
+  if(u.indexOf('DEB')>-1||u.indexOf('DEBRIS')>-1)return'debris';
+  if(u.indexOf('R/B')>-1||u.indexOf('ROCKET')>-1||u.indexOf('BOOSTER')>-1)return'rocket_body';
+  return'payload';
+}
+function classOrbit(r){var a=r-RE;if(a<2000)return'LEO';if(a<35000)return'MEO';if(a<36500)return'GEO';return'HEO';}
+
+// State
+var objects=[],N=0,simTime=Date.now(),speed=1,lastT=performance.now(),earthRot=0,autoRot=false;
+var hidden=new Set(),SPEEDS=[1,5,30,120,600,1800,3600,14400,86400,259200,604800];
+var TCOD={payload:0,rocket_body:1,debris:2,unknown:3};
+var camTh=0.4,camPh=0.22,camD=3.4,dragging=false,mX=0,mY=0,didDrag=false;
+
+// WebGL
+var canvas=document.getElementById('c');
+var gl=canvas.getContext('webgl')||canvas.getContext('experimental-webgl');
+if(!gl){document.getElementById('lmsg').textContent='WebGL not supported';return;}
+
+function mkProg(vs,fs){
+  var v=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(v,vs);gl.compileShader(v);
+  var f=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(f,fs);gl.compileShader(f);
+  var p=gl.createProgram();gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);
+  return p;
+}
+
+// Earth shader — NOTE: uv.x maps longitude (0=left=neg X axis), uv.y maps latitude
+// The sphere is built with longitude going 0->2pi as lo goes 0->segs
+// Three.js convention: lon=0 at +X, but we need correct orientation
+var earthP=mkProg(
+  'attribute vec3 p;attribute vec3 nm;attribute vec2 uv;uniform mat4 mvp;uniform mat4 mdl;varying vec3 vn;varying vec2 vt;void main(){vn=normalize(mat3(mdl[0].xyz,mdl[1].xyz,mdl[2].xyz)*nm);vt=uv;gl_Position=mvp*vec4(p,1.);}',
+  'precision mediump float;varying vec3 vn;varying vec2 vt;uniform sampler2D tex;uniform int hasTex;uniform vec3 sun;void main(){float d=max(dot(vn,normalize(sun)),0.)+.08;if(hasTex==1){vec4 c=texture2D(tex,vec2(1.-vt.x,1.-vt.y));gl_FragColor=vec4(c.rgb*d,1.);}else{float lat=(1.-vt.y)*3.14159-1.5708;float lon=vt.x*6.28318;float h=sin(lat*4.)*cos(lon*7.)+sin(lat*9.+1.)*cos(lon*13.+2.)*.35;vec3 land=vec3(.12,.28,.14);vec3 sea=vec3(.04,.12,.28);vec3 col=mix(sea,land,smoothstep(0.,.35,h));col=mix(col,vec3(.88,.92,.96),smoothstep(1.1,1.45,abs(lat)));gl_FragColor=vec4(col*d,1.);}}'
+);
+var atmP=mkProg(
+  'attribute vec3 p;attribute vec3 nm;uniform mat4 mvp;varying vec3 vn;void main(){vn=nm;gl_Position=mvp*vec4(p*1.028,1.);}',
+  'precision mediump float;varying vec3 vn;uniform vec3 cam;void main(){float r=1.-abs(dot(normalize(vn),normalize(cam)));gl_FragColor=vec4(.1,.32,1.,pow(r,3.)*.55);}'
+);
+var satP=mkProg(
+  'attribute vec3 p;attribute float tp;attribute float sl;uniform mat4 mvp;uniform float sz;varying vec4 vc;varying float vs;void main(){vec4 c;if(tp<.5)c=vec4(0.,.89,1.,1.);else if(tp<1.5)c=vec4(1.,.58,0.,1.);else if(tp<2.5)c=vec4(1.,.24,.24,1.);else c=vec4(.4,.4,.4,1.);vc=c;vs=sl;vec4 mv=mvp*vec4(p,1.);gl_PointSize=clamp(sz*1.5/max(-mv.z,.01),2.,14.);gl_Position=mv;}',
+  'precision mediump float;varying vec4 vc;varying float vs;void main(){vec2 uv=gl_PointCoord-.5;if(length(uv)>.5)discard;float a=1.-smoothstep(.3,.5,length(uv));gl_FragColor=vec4(vs>.5?vec3(1.,1.,.2):vc.rgb,a);}'
+);
+var trailP=mkProg('attribute vec3 p;uniform mat4 mvp;void main(){gl_Position=mvp*vec4(p,1.);}','precision mediump float;void main(){gl_FragColor=vec4(0.,.9,1.,.28);}');
+var starP=mkProg('attribute vec3 p;uniform mat4 mvp;void main(){gl_PointSize=1.2;gl_Position=mvp*vec4(p,1.);}','precision mediump float;void main(){gl_FragColor=vec4(1.,1.,1.,.65);}');
+
+// Matrix
+function persp(fov,asp,n,f){var t=1/Math.tan(fov/2),r=1/(n-f);return new Float32Array([t/asp,0,0,0,0,t,0,0,0,0,(n+f)*r,-1,0,0,n*f*r*2,0]);}
+function mul(a,b){var c=new Float32Array(16);for(var i=0;i<4;i++)for(var j=0;j<4;j++){var s=0;for(var k=0;k<4;k++)s+=a[i+k*4]*b[k+j*4];c[i+j*4]=s;}return c;}
+function rotY(a){var c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);}
+function lookAt(ex,ey,ez){
+  var fx=-ex,fy=-ey,fz=-ez,fl=Math.sqrt(fx*fx+fy*fy+fz*fz);fx/=fl;fy/=fl;fz/=fl;
+  var rx=fy*0-fz*1,ry=fz*0-fx*0,rz=fx*1-fy*0,rl=Math.sqrt(rx*rx+ry*ry+rz*rz);rx/=rl;ry/=rl;rz/=rl;
+  var ux=ry*fz-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy-ry*fx;
+  return new Float32Array([rx,ux,-fx,0,ry,uy,-fy,0,rz,uz,-fz,0,-(rx*ex+ry*ey+rz*ez),-(ux*ex+uy*ey+uz*ez),fx*ex+fy*ey+fz*ez,1]);
+}
+
+// Sphere (high res)
+function mkSphere(r,s){
+  var v=[],n=[],u=[],ix=[];
+  for(var la=0;la<=s;la++){var th=la*PI/s,st=Math.sin(th),ct=Math.cos(th);
+    for(var lo=0;lo<=s;lo++){var ph=lo*TAU/s,sp=Math.sin(ph),cp=Math.cos(ph);v.push(r*st*cp,r*ct,r*st*sp);n.push(st*cp,ct,st*sp);u.push(lo/s,la/s);}}
+  for(var la=0;la<s;la++)for(var lo=0;lo<s;lo++){var a=la*(s+1)+lo,b=a+s+1;ix.push(a,b,a+1,b,b+1,a+1);}
+  return{v:new Float32Array(v),n:new Float32Array(n),u:new Float32Array(u),i:new Uint16Array(ix)};
+}
+var sph=mkSphere(1,72);
+function vbo(d,dyn){var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,d,dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);return b;}
+function ibo(d){var b=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;}
+function attr(p,nm,buf,sz){var l=gl.getAttribLocation(p,nm);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,sz,gl.FLOAT,false,0,0);}
+function uni1f(p,n,v){gl.uniform1f(gl.getUniformLocation(p,n),v);}
+function uni1i(p,n,v){gl.uniform1i(gl.getUniformLocation(p,n),v);}
+function uni3(p,n,x,y,z){gl.uniform3f(gl.getUniformLocation(p,n),x,y,z);}
+function uniM(p,n,m){gl.uniformMatrix4fv(gl.getUniformLocation(p,n),false,m);}
+
+var eV=vbo(sph.v),eN=vbo(sph.n),eU=vbo(sph.u),eI=ibo(sph.i);
+
+// Stars
+var stN=6000,stBuf=new Float32Array(stN*3);
+for(var i=0;i<stN;i++){var x,y,z,r2;do{x=Math.random()*2-1;y=Math.random()*2-1;z=Math.random()*2-1;r2=x*x+y*y+z*z;}while(r2>1||r2<.001);var sc=80/Math.sqrt(r2);stBuf[i*3]=x*sc;stBuf[i*3+1]=y*sc;stBuf[i*3+2]=z*sc;}
+var stV=vbo(stBuf);
+
+// Earth texture - try multiple sources
+var earthTex=gl.createTexture();
+var hasTex=0;
+gl.bindTexture(gl.TEXTURE_2D,earthTex);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([8,30,60,255]));
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+
+function loadTex(urls,idx){
+  if(idx>=urls.length)return;
+  var img=new Image();img.crossOrigin='anonymous';
+  img.onload=function(){
+    gl.bindTexture(gl.TEXTURE_2D,earthTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    hasTex=1;
+  };
+  img.onerror=function(){loadTex(urls,idx+1);};
+  img.src=urls[idx];
+}
+loadTex([
+  'https://raw.githubusercontent.com/mrdoob/three.js/r134/examples/textures/planets/earth_atmos_2048.jpg',
+  'https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74518/world.200412.3x2048x1024.jpg'
+],0);
+
+// Satellite buffers
+var MAX=8000;
+var sPos=new Float32Array(MAX*3),sTp=new Float32Array(MAX),sSl=new Float32Array(MAX);
+var sPB=vbo(sPos,true),sTB=vbo(sTp,true),sSB=vbo(sSl,true);
+
+// Trail
+var trlB=null,trlN=0;
+function setTrail(pts){
+  if(trlB){gl.deleteBuffer(trlB);trlB=null;trlN=0;}
+  if(!pts||pts.length<2)return;
+  var d=new Float32Array(pts.length*3);
+  for(var i=0;i<pts.length;i++){d[i*3]=pts[i][0];d[i*3+1]=pts[i][1];d[i*3+2]=pts[i][2];}
+  trlB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,trlB);gl.bufferData(gl.ARRAY_BUFFER,d,gl.DYNAMIC_DRAW);trlN=pts.length;
+}
+
+// Input
+canvas.addEventListener('mousedown',function(e){dragging=true;mX=e.clientX;mY=e.clientY;didDrag=false;});
+window.addEventListener('mouseup',function(e){if(!didDrag)pick(e);dragging=false;});
+window.addEventListener('mousemove',function(e){if(!dragging)return;var dx=e.clientX-mX,dy=e.clientY-mY;if(Math.abs(dx)+Math.abs(dy)>2)didDrag=true;camTh-=dx*.005;camPh-=dy*.005;camPh=Math.max(-1.48,Math.min(1.48,camPh));mX=e.clientX;mY=e.clientY;});
+canvas.addEventListener('wheel',function(e){e.preventDefault();camD*=1+e.deltaY*.001;camD=Math.max(1.1,Math.min(50,camD));},{passive:false});
+var lpin=0;
+canvas.addEventListener('touchstart',function(e){e.preventDefault();if(e.touches.length===1){dragging=true;mX=e.touches[0].clientX;mY=e.touches[0].clientY;didDrag=false;}else{dragging=false;lpin=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}},{passive:false});
+canvas.addEventListener('touchmove',function(e){e.preventDefault();if(e.touches.length===1&&dragging){var dx=e.touches[0].clientX-mX,dy=e.touches[0].clientY-mY;if(Math.abs(dx)+Math.abs(dy)>2)didDrag=true;camTh-=dx*.005;camPh-=dy*.005;camPh=Math.max(-1.48,Math.min(1.48,camPh));mX=e.touches[0].clientX;mY=e.touches[0].clientY;}else if(e.touches.length===2){var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);camD*=lpin/d;camD=Math.max(1.1,Math.min(50,camD));lpin=d;}},{passive:false});
+canvas.addEventListener('touchend',function(){dragging=false;},{passive:false});
+
+window.resetView=function(){camTh=0.4;camPh=0.22;camD=3.4;};
+window.setSpeed=function(v){speed=SPEEDS[+v]||1;var s=speed;document.getElementById('tdisp').textContent=s>=86400?(s/86400|0)+'dx':s>=3600?(s/3600|0)+'hx':s>=60?(s/60|0)+'mx':s+'x';};
+window.toggleType=function(t,el){hidden.has(t)?hidden.delete(t):hidden.add(t);el.classList.toggle('off',hidden.has(t));};
+window.closeDet=function(){document.getElementById('detpanel').classList.remove('vis');sSl.fill(0);gl.bindBuffer(gl.ARRAY_BUFFER,sSB);gl.bufferSubData(gl.ARRAY_BUFFER,0,sSl.subarray(0,N));setTrail(null);};
+
+function getMats(){
+  var W=canvas.width,H=canvas.height;
+  var cx=camD*Math.cos(camPh)*Math.sin(camTh),cy=camD*Math.sin(camPh),cz=camD*Math.cos(camPh)*Math.cos(camTh);
+  return{mvp:mul(persp(PI/4,W/H,.01,200),lookAt(cx,cy,cz)),cx:cx,cy:cy,cz:cz};
+}
+
+var tick=0;
+function updSats(){
+  var now=new Date(simTime);
+  for(var i=0;i<N;i++){
+    if(hidden.has(objects[i].t)){sPos[i*3]=0;sPos[i*3+1]=0;sPos[i*3+2]=0;sTp[i]=TCOD[objects[i].t]||3;continue;}
+    try{
+      var pv=sat.propagate(objects[i].satrec,now);
+      if(pv&&pv.position){sPos[i*3]=pv.position.x/RE;sPos[i*3+1]=pv.position.z/RE;sPos[i*3+2]=-pv.position.y/RE;}
+      else{sPos[i*3]=0;sPos[i*3+1]=0;sPos[i*3+2]=0;}
+    }catch(e){sPos[i*3]=0;sPos[i*3+1]=0;sPos[i*3+2]=0;}
+    sTp[i]=TCOD[objects[i].t]||3;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,sPB);gl.bufferSubData(gl.ARRAY_BUFFER,0,sPos.subarray(0,N*3));
+  gl.bindBuffer(gl.ARRAY_BUFFER,sTB);gl.bufferSubData(gl.ARRAY_BUFFER,0,sTp.subarray(0,N));
+  gl.bindBuffer(gl.ARRAY_BUFFER,sSB);gl.bufferSubData(gl.ARRAY_BUFFER,0,sSl.subarray(0,N));
+}
+
+function pick(e){
+  var rect=canvas.getBoundingClientRect();
+  var mx=(e.clientX-rect.left)/rect.width*2-1,my=-((e.clientY-rect.top)/rect.height*2-1);
+  var m=getMats(),best=-1,bestD=0.05;
+  for(var i=0;i<N;i++){
+    if(hidden.has(objects[i].t))continue;
+    var v=[sPos[i*3],sPos[i*3+1],sPos[i*3+2],1],clip=[0,0,0,0];
+    for(var r=0;r<4;r++)for(var c=0;c<4;c++)clip[r]+=m.mvp[r+c*4]*v[c];
+    if(clip[3]<=0)continue;
+    var d=Math.sqrt(Math.pow(clip[0]/clip[3]-mx,2)+Math.pow(clip[1]/clip[3]-my,2));
+    if(d<bestD){bestD=d;best=i;}
+  }
+  if(best<0){window.closeDet();return;}
+  selSat(best);
+}
+
+function selSat(i){
+  var obj=objects[i],alt='--',vel='--',orb='--';
+  try{
+    var pv=sat.propagate(obj.satrec,new Date(simTime));
+    if(pv&&pv.position){
+      var p=pv.position,r=Math.sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
+      alt=Math.round(r-RE)+' km';vel=(Math.sqrt(MU/r)).toFixed(2)+' km/s';orb=classOrbit(r);
+      var steps=90,dt2=obj.period*60/steps*1000,trail=[];
+      for(var j=0;j<=steps;j++){try{var pp=sat.propagate(obj.satrec,new Date(simTime+j*dt2));if(pp&&pp.position)trail.push([pp.position.x/RE,pp.position.z/RE,-pp.position.y/RE]);}catch(e){}}
+      setTrail(trail);
+    }
+  }catch(e){setTrail(null);}
+  sSl.fill(0);sSl[i]=1;gl.bindBuffer(gl.ARRAY_BUFFER,sSB);gl.bufferSubData(gl.ARRAY_BUFFER,0,sSl.subarray(0,N));
+  document.getElementById('detname').textContent=obj.n;
+  document.getElementById('dn').textContent=obj.noradId;
+  var bc={payload:'bp',rocket_body:'br',debris:'bd',unknown:'bu'}[obj.t]||'bu';
+  document.getElementById('dt').innerHTML='<span class="badge '+bc+'">'+obj.t.replace('_',' ')+'</span>';
+  document.getElementById('do').textContent=orb;document.getElementById('da').textContent=alt;
+  document.getElementById('dp').textContent=obj.period.toFixed(1)+' min';document.getElementById('di').textContent=obj.inc.toFixed(2)+'deg';
+  document.getElementById('dv').textContent=vel;document.getElementById('de').textContent=obj.ecc.toFixed(6);
+  document.getElementById('detpanel').classList.add('vis');
+}
+
+// Search
+var sT;
+window.doSearch=function(v){
+  clearTimeout(sT);var sl=document.getElementById('slist');
+  if(!v.trim()){sl.classList.remove('vis');return;}
+  sT=setTimeout(function(){
+    var q=v.toLowerCase(),cc={payload:'#00e5ff',rocket_body:'#ff9500',debris:'#ff3d3d',unknown:'#555'};
+    var m=objects.filter(function(o){return o.n.toLowerCase().indexOf(q)>-1||String(o.noradId).indexOf(q)>-1;}).slice(0,12);
+    if(!m.length){sl.classList.remove('vis');return;}
+    sl.innerHTML=m.map(function(o){return'<div class="sri" onclick="pickSrch('+objects.indexOf(o)+')"><span class="dot" style="background:'+cc[o.t]+'"></span><span class="sn">'+o.n+'</span><span class="sid">'+o.noradId+'</span></div>';}).join('');
+    sl.classList.add('vis');
+  },150);
+};
+window.hideSrch=function(){document.getElementById('slist').classList.remove('vis');};
+window.pickSrch=function(i){window.hideSrch();document.getElementById('sinput').value='';selSat(i);};
+document.addEventListener('click',function(e){if(!document.getElementById('srchpanel').contains(e.target))window.hideSrch();});
+
+// Render
+var SIDEREAL=TAU/86164,fc=0,fpsT=performance.now();
+function render(now){
+  requestAnimationFrame(render);
+  var dt=(now-lastT)/1000;lastT=now;
+  simTime+=dt*speed*1000;earthRot+=SIDEREAL*dt*speed;
+  if(autoRot)camTh+=.0015*dt*60;
+  var W=canvas.clientWidth*devicePixelRatio|0,H=canvas.clientHeight*devicePixelRatio|0;
+  if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}
+  tick+=dt*speed;if(tick>1.5){updSats();tick=0;}
+  gl.viewport(0,0,canvas.width,canvas.height);
+  gl.clearColor(0,.012,.032,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
+  var mm=getMats(),mvp=mm.mvp,eMdl=rotY(earthRot),eMVP=mul(mvp,eMdl);
+  gl.depthMask(false);gl.useProgram(starP);uniM(starP,'mvp',mvp);attr(starP,'p',stV,3);gl.drawArrays(gl.POINTS,0,stN);gl.depthMask(true);
+  gl.useProgram(earthP);uniM(earthP,'mvp',eMVP);uniM(earthP,'mdl',eMdl);uni3(earthP,'sun',10,5,8);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,earthTex);uni1i(earthP,'tex',0);uni1i(earthP,'hasTex',hasTex);
+  attr(earthP,'p',eV,3);attr(earthP,'nm',eN,3);attr(earthP,'uv',eU,2);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,eI);gl.drawElements(gl.TRIANGLES,sph.i.length,gl.UNSIGNED_SHORT,0);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.depthMask(false);gl.enable(gl.CULL_FACE);gl.cullFace(gl.FRONT);
+  gl.useProgram(atmP);uniM(atmP,'mvp',mvp);uni3(atmP,'cam',mm.cx,mm.cy,mm.cz);attr(atmP,'p',eV,3);attr(atmP,'nm',eN,3);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,eI);gl.drawElements(gl.TRIANGLES,sph.i.length,gl.UNSIGNED_SHORT,0);
+  gl.disable(gl.CULL_FACE);gl.depthMask(true);
+  if(trlB&&trlN>1){gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.useProgram(trailP);uniM(trailP,'mvp',mvp);attr(trailP,'p',trlB,3);gl.drawArrays(gl.LINE_STRIP,0,trlN);}
+  if(N>0){gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.useProgram(satP);uniM(satP,'mvp',mvp);uni1f(satP,'sz',canvas.height*.38);attr(satP,'p',sPB,3);attr(satP,'tp',sTB,1);attr(satP,'sl',sSB,1);gl.drawArrays(gl.POINTS,0,N);}
+  gl.disable(gl.BLEND);
+  fc++;if(now-fpsT>=1000){document.getElementById('fps').textContent=(fc*1000/(now-fpsT)|0)+' FPS / '+N.toLocaleString()+' OBJ';fc=0;fpsT=now;}
+  document.getElementById('simclock').textContent=new Date(simTime).toISOString().replace('T',' ').slice(0,19)+' UTC';
+}
+
+// Boot
+function setP(p,m){document.getElementById('lfill').style.width=p+'%';if(m)document.getElementById('lmsg').textContent=m;}
+setP(20,'PARSING TLE DATA...');
+setTimeout(function(){
+  var objs=parseTLEs(TLE_DATA);
+  objects=objs.slice(0,MAX);N=objects.length;
+  sSl.fill(0);
+  var counts={payload:0,rocket_body:0,debris:0,unknown:0};
+  objects.forEach(function(o){counts[o.t]=(counts[o.t]||0)+1;});
+  document.getElementById('stot').textContent=N.toLocaleString();
+  document.getElementById('spay').textContent=(counts.payload||0).toLocaleString();
+  document.getElementById('srkt').textContent=(counts.rocket_body||0).toLocaleString();
+  document.getElementById('sdeb').textContent=(counts.debris||0).toLocaleString();
+  document.getElementById('lp').textContent=counts.payload||0;
+  document.getElementById('lr').textContent=counts.rocket_body||0;
+  document.getElementById('ld').textContent=counts.debris||0;
+  document.getElementById('lu').textContent=counts.unknown||0;
+  document.getElementById('satcount').textContent=N.toLocaleString()+' OBJ';
+  setP(60,'COMPUTING POSITIONS...');
+  updSats();
+  setP(90,'LAUNCHING...');
+  requestAnimationFrame(render);
+  setTimeout(function(){
+    setP(100,'READY');
+    setTimeout(function(){var l=document.getElementById('loader');l.classList.add('out');setTimeout(function(){if(l.parentNode)l.parentNode.removeChild(l);},700);},300);
+  },200);
+},50);
+
+})();
+</script>
+</body>
+</html>
