@@ -9,7 +9,7 @@
 <h1 align="center">🛰 Orbital Viz</h1>
 <p align="center"><strong>Production-grade real-time 3D satellite tracking & orbital debris visualization</strong></p>
 <p align="center">
-  Track 5,000+ Earth-orbiting objects live. Powered by SGP4 propagation, Space-Track.org TLE data,<br/>
+  Track hundreds of Earth-orbiting objects in a zero-install browser demo — and scale to 5,000+ live via Space-Track ingestion when you add credentials. Powered by SGP4 propagation, Space-Track.org TLE data,<br/>
   Three.js WebGL rendering, and WebSocket real-time position broadcasting.
 </p>
 
@@ -19,10 +19,10 @@
 
 | Category | Details |
 |---|---|
-| **3D Visualization** | WebGL point cloud rendering of 5,000+ satellites at 60fps. Earth sphere with 8K day/night textures, specular, normal, and cloud layers. Bloom post-processing. |
+| **3D Visualization** | WebGL point cloud rendering of hundreds of satellites in the demo at 60fps (the ingestion backend scales to 5,000+). Earth sphere with 8K day/night textures, specular, normal, and cloud layers. Bloom post-processing. |
 | **Real-Time Tracking** | SGP4 orbital propagation running in a Web Worker at ~15fps. WebSocket pushes live position updates to all connected clients every 2 seconds. |
 | **Live TLE Data** | Ingests from Space-Track.org every 15 minutes. Rate-limit-aware (28 req/hr hard cap). Session cookie caching for auth efficiency. |
-| **Demo Mode** | Works out-of-the-box **without credentials** — 48 real satellite TLEs built in (ISS, HST, GPS, GOES, Starlink, Tiangong, Iridium debris, Cosmos debris, FengYun debris, and more). |
+| **Demo Mode** | Works out-of-the-box **without credentials** — hundreds of real and catalog-derived TLEs built in (ISS, HST, GPS, GOES, Starlink, Tiangong, Iridium debris, Cosmos debris, FengYun debris, and more). |
 | **Object Selection** | GPU raycasting click-to-select. Displays lat/lon/alt, velocity, orbital period, apogee/perigee, eccentricity, inclination, epoch. Draws 2-hour orbit trail. |
 | **Pass Prediction** | REST endpoint computes overhead passes from observer lat/lon/alt. |
 | **Conjunction Screening** | Screens up to 2,000 objects for close approaches within configurable threshold (km). |
@@ -81,7 +81,7 @@ npm start
 
 Open **http://localhost:3000**
 
-> **No credentials?** No problem — the app launches in demo mode with 48 real satellites pre-loaded including ISS, Hubble, GPS, GOES, Starlink, Tiangong, and major debris clouds.
+> **No credentials?** No problem — the app launches in demo mode with a curated set of real satellites pre-loaded including ISS, Hubble, GPS, GOES, Starlink, Tiangong, and major debris clouds.
 
 ---
 
@@ -287,7 +287,7 @@ const buf = orbital.batchPropagateToFloat32(objects, new Date(), satrecCache);
 
 ## 🛸 Demo Mode Satellite Roster
 
-When running without Space-Track credentials, the following 48 real objects are loaded:
+When running without Space-Track credentials, a curated set of real objects is loaded, including:
 
 | Object | NORAD ID | Type | Orbit |
 |---|---|---|---|
