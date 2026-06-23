@@ -2468,7 +2468,7 @@ function mkProg(vs,fs){
 // Three.js convention: lon=0 at +X, but we need correct orientation
 var earthP=mkProg(
   'attribute vec3 p;attribute vec3 nm;attribute vec2 uv;uniform mat4 mvp;uniform mat4 mdl;varying vec3 vn;varying vec2 vt;void main(){vn=normalize(mat3(mdl[0].xyz,mdl[1].xyz,mdl[2].xyz)*nm);vt=uv;gl_Position=mvp*vec4(p,1.);}',
-  'precision mediump float;varying vec3 vn;varying vec2 vt;uniform sampler2D tex;uniform int hasTex;uniform vec3 sun;void main(){float d=max(dot(vn,normalize(sun)),0.)+.08;if(hasTex==1){vec4 c=texture2D(tex,vec2(1.-vt.x,1.-vt.y));gl_FragColor=vec4(c.rgb*d,1.);}else{float lat=(1.-vt.y)*3.14159-1.5708;float lon=vt.x*6.28318;float h=sin(lat*4.)*cos(lon*7.)+sin(lat*9.+1.)*cos(lon*13.+2.)*.35;vec3 land=vec3(.12,.28,.14);vec3 sea=vec3(.04,.12,.28);vec3 col=mix(sea,land,smoothstep(0.,.35,h));col=mix(col,vec3(.88,.92,.96),smoothstep(1.1,1.45,abs(lat)));gl_FragColor=vec4(col*d,1.);}}'
+  'precision mediump float;varying vec3 vn;varying vec2 vt;uniform sampler2D tex;uniform int hasTex;uniform vec3 sun;void main(){float d=max(dot(vn,normalize(sun)),0.)+.08;if(hasTex==1){vec4 c=texture2D(tex,vec2(1.-vt.x,vt.y));gl_FragColor=vec4(c.rgb*d,1.);}else{float lat=(1.-vt.y)*3.14159-1.5708;float lon=vt.x*6.28318;float h=sin(lat*4.)*cos(lon*7.)+sin(lat*9.+1.)*cos(lon*13.+2.)*.35;vec3 land=vec3(.12,.28,.14);vec3 sea=vec3(.04,.12,.28);vec3 col=mix(sea,land,smoothstep(0.,.35,h));col=mix(col,vec3(.88,.92,.96),smoothstep(1.1,1.45,abs(lat)));gl_FragColor=vec4(col*d,1.);}}'
 );
 var atmP=mkProg(
   'attribute vec3 p;attribute vec3 nm;uniform mat4 mvp;varying vec3 vn;void main(){vn=nm;gl_Position=mvp*vec4(p*1.028,1.);}',
