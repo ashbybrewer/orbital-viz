@@ -13,6 +13,8 @@
   Three.js WebGL rendering, and WebSocket real-time position broadcasting.
 </p>
 
+> 🛰 Live demo: https://ashbybrewer.github.io/orbital-viz/ — runs in your browser in demo mode, no install required.
+
 ---
 
 ## ✨ Features
