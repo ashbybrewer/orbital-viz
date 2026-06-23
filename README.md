@@ -44,7 +44,7 @@
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/orbital-viz.git
+git clone https://github.com/ashbybrewer/orbital-viz.git
 cd orbital-viz
 npm install
 ```
